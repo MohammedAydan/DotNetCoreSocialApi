@@ -5,6 +5,7 @@ using Social.Core.Interfaces;
 using Social.Infrastucture.Data;
 using System;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 
 namespace Social.Infrastucture.Repositories
 {
@@ -116,6 +117,9 @@ namespace Social.Infrastucture.Repositories
 
             if (user.LastName != null && user.LastName != existingUser.LastName)
                 existingUser.LastName = user.LastName;
+
+            if (user.UserGender != null && user.UserGender != existingUser.UserGender)
+                existingUser.UserGender = user.UserGender;
 
             if (user.BirthDate != default && user.BirthDate != existingUser.BirthDate)
                 existingUser.BirthDate = user.BirthDate;
@@ -321,6 +325,75 @@ namespace Social.Infrastucture.Repositories
                 if (!result.Succeeded)
                     throw new InvalidOperationException($"Failed to create 'Admin' role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
             }
+        }
+
+        public async Task<bool> ChangePassword(string userId, string currentPassword, string newPassword, string confirmPassword)
+        {
+            User? currentUser = await _context.Users.FindAsync(userId);
+            if(currentUser == null || !await _userManager.CheckPasswordAsync(currentUser, currentPassword))
+            {
+                throw new InvalidOperationException("Invalid a urrent password.");
+            }
+
+            if(newPassword != confirmPassword)
+            {
+                throw new InvalidOperationException("New password and confirmation do not match.");
+            }
+
+            var result = await _userManager.ChangePasswordAsync(currentUser, currentPassword, newPassword);
+
+            if (!result.Succeeded)
+            {
+                throw new InvalidOperationException($"Failed to change password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+
+            return true;
+        }
+
+        public async Task<string> CreateRefreshTokenAsync(string userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                throw new InvalidOperationException("User not found.");
+
+            var existingToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.UserId == userId);
+            if (existingToken != null)
+                _context.RefreshTokens.Remove(existingToken);
+
+            var randomNumber = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            var refreshToken = Convert.ToBase64String(randomNumber);
+
+            var refreshTokenEntity = new RefreshToken
+            {
+                Token = refreshToken,
+                UserId = userId,
+                Expires = DateTime.UtcNow.AddDays(7),
+                Created = DateTime.UtcNow,
+            };
+
+            await _context.RefreshTokens.AddAsync(refreshTokenEntity);
+            await _context.SaveChangesAsync();
+
+            return refreshToken;
+        }
+
+        public async Task<RefreshToken?> ValidateRefreshTokenAsync(string refreshToken)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                throw new ArgumentException("Refresh token cannot be null or empty.", nameof(refreshToken));
+
+            var tokenEntity = await _context.RefreshTokens
+                .AsNoTracking()
+                .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+
+            if (tokenEntity == null || tokenEntity.Expires < DateTime.UtcNow)
+            {
+                return null; 
+            }
+
+            return tokenEntity;
         }
     }
 }

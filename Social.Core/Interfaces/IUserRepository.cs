@@ -6,6 +6,7 @@ namespace Social.Core.Interfaces
     {
         Task<User> CreateAsync(User user, string password);
         Task<User> SignInAsync(SignIn signIn);
+        Task<bool> ChangePassword(string userId, string currentPassword, string newPassword, string confirmPassword);
 
         Task<User> GetUserByIdAsync(string userId, string? myUserId= null);
 
@@ -20,5 +21,8 @@ namespace Social.Core.Interfaces
             string? currentUserId = null,
             int page = 1,
             int limit = 20);
+
+        Task<string> CreateRefreshTokenAsync(string userId);
+        Task<RefreshToken?> ValidateRefreshTokenAsync(string refreshToken);
     }
 }

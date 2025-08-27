@@ -35,7 +35,8 @@ namespace Social.Application.Features.Users.DTOs
             UserDto? user = null,
             string? token = null,
             string? type = null,
-            string? accessToken = null
+            string? accessToken = null,
+            string? refreshToken = null
             ) {
             return new AuthResponse(
                 message: message,
@@ -43,7 +44,8 @@ namespace Social.Application.Features.Users.DTOs
                 user: user,
                 token: token,
                 type: type,
-                accessToken: accessToken
+                accessToken: accessToken,
+                refreshToken: refreshToken
             );
         }
     }

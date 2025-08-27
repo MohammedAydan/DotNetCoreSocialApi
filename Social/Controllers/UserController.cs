@@ -35,9 +35,10 @@ namespace Social.API.Controllers
 
                 if (string.IsNullOrWhiteSpace(createUserRequest.UserName) ||
                     string.IsNullOrWhiteSpace(createUserRequest.Email) ||
+                    string.IsNullOrWhiteSpace(createUserRequest.UserGender) ||
                     string.IsNullOrWhiteSpace(createUserRequest.Password))
                 {
-                    return BadRequest("UserName, Email, and Password are required fields.");
+                    return BadRequest("UserName, Email, UserGender, and Password are required fields.");
                 }
 
                 var result = await _sender.Send(new CreateUserCommand(createUserRequest));
@@ -90,6 +91,61 @@ namespace Social.API.Controllers
             catch (Exception ex)
             {
                 return ApiServerError<AuthResponse>($"An error occurred: {ex.Message}");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest refreshTokenRequest)
+        {
+            try
+            {
+                if (refreshTokenRequest == null || string.IsNullOrWhiteSpace(refreshTokenRequest.RefreshToken))
+                {
+                    return ApiError<AuthResponse>("Refresh token is required.", new List<string> { "Refresh token is required." });
+                }
+                var result = await _sender.Send(new RefreshTokenCommand(refreshTokenRequest.RefreshToken));
+                if (result == null)
+                {
+                    return ApiError<AuthResponse>("Token refresh failed.", new List<string> { "Unknown error occurred." });
+                }
+                if (!result.IsSuccess)
+                {
+                    return ApiError<AuthResponse>("Token refresh failed.", result.Errors ?? new List<string> { "Unknown error occurred." });
+                }
+                return ApiSuccess<AuthResponse>("Token refreshed successfully", result);
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<AuthResponse>($"An error occurred: {ex.Message}");
+            }
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest changePasswordRequest)
+        {
+            try
+            {
+                if (changePasswordRequest == null)
+                {
+                    return ApiError<object>("Request body cannot be null.", new List<string> { "Request body cannot be null." });
+                }
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return ApiUnauthorized<object>("User ID not found in token.");
+                }
+                var result = await _sender.Send(new ChangePasswordCommand(userId, changePasswordRequest));
+                if (!result)
+                {
+                    return ApiError<object>("Password change failed.", new List<string> { "Unknown error occurred." });
+                }
+                return ApiSuccess<object>("Password changed successfully", null);
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>($"An error occurred: {ex.Message}");
             }
         }
 

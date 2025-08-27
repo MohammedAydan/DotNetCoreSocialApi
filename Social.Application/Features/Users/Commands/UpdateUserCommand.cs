@@ -1,8 +1,10 @@
-﻿using Social.Application.Features.Users.DTOs;
+﻿using AutoMapper;
 using MediatR;
-using Social.Core.Interfaces;
+using MySqlX.XDevAPI.Common;
+using Social.Application.Features.Users.DTOs;
+using Social.Core;
 using Social.Core.Entities;
-using AutoMapper;
+using Social.Core.Interfaces;
 
 namespace Social.Application.Features.Users.Commends
 {
@@ -26,6 +28,10 @@ namespace Social.Application.Features.Users.Commends
             }
 
             User? user = _mapper.Map<User>(request.UserDto);
+            var userGender = string.Equals(user.UserGender, UserGenderTypes.Male, StringComparison.OrdinalIgnoreCase)
+                ? UserGenderTypes.Male
+                : UserGenderTypes.Female;
+            user.UserGender = userGender;
 
 
             User? userResult = await _userRepository.UpdateUserAsync(user);

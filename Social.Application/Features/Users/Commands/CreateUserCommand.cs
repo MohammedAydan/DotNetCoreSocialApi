@@ -3,6 +3,7 @@ using MediatR;
 using Social.Application.Features.Users.DTOs;
 using Social.Core.Interfaces;
 using Social.Core.Entities;
+using Social.Core;
 
 namespace Social.Application.Features.Users.Commands
 {
@@ -23,62 +24,46 @@ namespace Social.Application.Features.Users.Commands
 
         public async Task<AuthResponse> Handle(CreateUserCommand request, CancellationToken cancellationToken)
         {
-            string? message = null;
-            UserDto? userDto = null;
-            string? accessToken = null;
-            List<string> errors = new();
+            if (request.CreateUserRequest == null)
+                return AuthResponse.Create("CreateUserRequest cannot be null", errors: new List<string> { "Invalid request" });
 
             try
             {
-                if (request.CreateUserRequest == null)
-                {
-                    message = "CreateUserRequest cannot be null";
-                    errors.Add(message);
-                    return AuthResponse.Create(
-                        message: message,
-                        errors: errors
-                    );
-                }
-
                 var user = _mapper.Map<User>(request.CreateUserRequest);
 
                 var result = await _userRepository.CreateAsync(user, request.CreateUserRequest.Password);
                 if (result == null)
-                {
-                    message = "User creation failed";
-                    errors.Add(message);
-                    return AuthResponse.Create(
-                        message: message,
-                        errors: errors
-                    );
-                }
+                    return AuthResponse.Create("User creation failed", errors: new List<string> { "Unable to create user" });
 
-                var rolesEnumerable = await _userRepository.GetUserRolesAsync(result);
-                var roles = rolesEnumerable?.ToList() ?? new List<string>();
-                accessToken = _tokenService.GenerateToken(result, roles);
+                var roles = (await _userRepository.GetUserRolesAsync(result))?.ToList() ?? new List<string>();
 
-                userDto = _mapper.Map<UserDto>(result);
+                var accessToken = _tokenService.GenerateToken(result, roles);
+                var refreshToken = await _userRepository.CreateRefreshTokenAsync(result.Id);
+
+                var userDto = _mapper.Map<UserDto>(result);
                 userDto.Roles = roles;
 
-                message = "User created successfully";
+                var userGender = string.Equals(result.UserGender, UserGenderTypes.Male, StringComparison.OrdinalIgnoreCase)
+                    ? UserGenderTypes.Male
+                    : UserGenderTypes.Female;
+                userDto.UserGender = userGender;
 
                 return AuthResponse.Create(
-                    message: message,
+                    message: "User created successfully",
                     user: userDto,
                     accessToken: accessToken,
-                    errors: errors
+                    refreshToken: refreshToken
                 );
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                errors.Add(ex.Message);
+                // log exception internally
                 return AuthResponse.Create(
-                    message: message ?? "An error occurred during user creation.",
-                    user: userDto,
-                    accessToken: accessToken,
-                    errors: errors
+                    message: "An error occurred during user creation.",
+                    errors: new List<string> { "Unexpected error" }
                 );
             }
         }
     }
+
 }

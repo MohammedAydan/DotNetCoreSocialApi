@@ -16,6 +16,9 @@ namespace Social.Application.Features.Users.DTOs
         [Required]
         public string UserName { get; set; }
 
+        [Required]
+        public string UserGender { get; set; } // Male Or Female
+
         [Required(ErrorMessage = "Email is required")]
         [EmailAddress(ErrorMessage = "Invalid email format")]
         public string Email { get; set; }

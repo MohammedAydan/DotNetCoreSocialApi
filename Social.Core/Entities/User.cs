@@ -9,6 +9,7 @@ namespace Social.Core.Entities
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string UserGender { get; set; } = string.Empty; // Male Or Female
         public DateTime BirthDate { get; set; }
         public string? Bio { get; set; }
         public string? ProfileImageUrl { get; set; }

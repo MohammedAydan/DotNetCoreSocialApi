@@ -28,12 +28,12 @@ builder.Services.AddTransient<AuthEndpoints>();
 // Add CORS policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost3000",
+    options.AddPolicy("AllowLocalhost",
         builder =>
         {
             builder
                 .WithOrigins(["https://social.mohammed-aydan.me"])
-                //.WithOrigins(["http://localhost:3000", "http://localhost:8080", "http://localhost:5173"])
+                .WithOrigins(["http://localhost:3000", "http://localhost:8080", "http://localhost:5173"])
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials(); // only if using cookies/auth
@@ -57,7 +57,7 @@ if (app.Environment.IsDevelopment())
 
 
 // Use CORS before any redirect
-app.UseCors("AllowLocalhost3000");
+app.UseCors("AllowLocalhost");
 
 app.UseAuthentication();
 app.UseAuthorization();

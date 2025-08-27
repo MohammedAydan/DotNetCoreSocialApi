@@ -148,7 +148,7 @@ namespace Social.API.Controllers
             try
             {
                 var userId = GetUserId();
-                if(userId == null)
+                if (userId == null)
                 {
                     return ApiUnauthorized<object>("User ID is required.");
                 }

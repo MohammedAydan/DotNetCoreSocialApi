@@ -10,5 +10,6 @@ namespace Social.Infrastucture.Token
     public interface ITokenService
     {
         string GenerateToken(User user, IList<string> roles);
+        string GenerateRefreshToken();
     }
 }

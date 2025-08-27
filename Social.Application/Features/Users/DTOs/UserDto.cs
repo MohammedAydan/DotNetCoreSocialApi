@@ -13,6 +13,7 @@ namespace Social.Application.Features.Users.DTOs
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string UserName { get; set; }
+        public string UserGender { get; set; } // Male Or Female
         public string Email { get; set; }
         public DateTime BirthDate { get; set; }
         public string Bio { get; set; }
