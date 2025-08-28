@@ -7,7 +7,7 @@ using MySql.EntityFrameworkCore.Metadata;
 namespace Social.Infrastucture.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -37,6 +37,7 @@ namespace Social.Infrastucture.Migrations
                     Id = table.Column<string>(type: "varchar(255)", nullable: false),
                     FirstName = table.Column<string>(type: "longtext", nullable: false),
                     LastName = table.Column<string>(type: "longtext", nullable: false),
+                    UserGender = table.Column<string>(type: "longtext", nullable: false),
                     BirthDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     Bio = table.Column<string>(type: "longtext", nullable: true),
                     ProfileImageUrl = table.Column<string>(type: "longtext", nullable: true),
@@ -281,6 +282,30 @@ namespace Social.Infrastucture.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "RefreshTokens",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySQL:ValueGenerationStrategy", MySQLValueGenerationStrategy.IdentityColumn),
+                    Token = table.Column<string>(type: "longtext", nullable: false),
+                    Expires = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Created = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Revoked = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    UserId = table.Column<string>(type: "varchar(255)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RefreshTokens_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Comments",
                 columns: table => new
                 {
@@ -478,6 +503,11 @@ namespace Social.Infrastucture.Migrations
                 name: "IX_Posts_UserId",
                 table: "Posts",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_UserId",
+                table: "RefreshTokens",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -512,6 +542,9 @@ namespace Social.Infrastucture.Migrations
 
             migrationBuilder.DropTable(
                 name: "Notifications");
+
+            migrationBuilder.DropTable(
+                name: "RefreshTokens");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

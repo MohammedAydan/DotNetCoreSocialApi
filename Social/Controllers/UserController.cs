@@ -113,11 +113,97 @@ namespace Social.API.Controllers
                 {
                     return ApiError<AuthResponse>("Token refresh failed.", result.Errors ?? new List<string> { "Unknown error occurred." });
                 }
+
                 return ApiSuccess<AuthResponse>("Token refreshed successfully", result);
             }
             catch (Exception ex)
             {
                 return ApiServerError<AuthResponse>($"An error occurred: {ex.Message}");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("forget-password")]
+        public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordRequest forgetPasswordRequest)
+        {
+            try
+            {
+                if (forgetPasswordRequest == null || string.IsNullOrWhiteSpace(forgetPasswordRequest.email))
+                {
+                    return ApiError<object>("Invalid request: Email is required.");
+                }
+
+                if (!forgetPasswordRequest.email.Contains("@"))
+                {
+                    return ApiError<object>("Invalid email format.");
+                }
+
+                var result = await _sender.Send(new ForgetPasswordCommand(forgetPasswordRequest));
+
+                if (string.IsNullOrEmpty(result))
+                {
+                    return ApiNotFound<object>("User not found or reset link could not be generated.");
+                }
+
+                return ApiSuccess<object>("Password reset link sent successfully.", new { resetUrl = result });
+            }
+            catch (ArgumentException ex)
+            {
+                return ApiError<object>($"Invalid request: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return ApiError<object>("An unexpected error occurred while processing the request.");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest resetPasswordRequest)
+        {
+            try
+            {
+                if (resetPasswordRequest == null)
+                {
+                    return ApiError<object>("Invalid request: Request body is required.");
+                }
+
+                if (string.IsNullOrWhiteSpace(resetPasswordRequest.Email) /*|| !resetPasswordRequest.Email.Contains("@")*/ )
+                {
+                    return ApiError<object>("Invalid email format.");
+                }
+
+                if (string.IsNullOrWhiteSpace(resetPasswordRequest.Token))
+                {
+                    return ApiError<object>("Invalid request: Reset token is required.");
+                }
+
+                if (string.IsNullOrWhiteSpace(resetPasswordRequest.Password))
+                {
+                    return ApiError<object>("Invalid request: New password is required.");
+                }
+
+                if (resetPasswordRequest.Password != resetPasswordRequest.ConfirmPassword)
+                {
+                    return ApiError<object>("Passwords do not match.");
+                }
+
+                var result = await _sender.Send(new ResetPasswordCommand(resetPasswordRequest));
+
+                if (!result)
+                {
+                    return ApiError<object>("Invalid or expired reset token, or user not found.");
+                }
+
+                return ApiSuccess<object>("Password reset successfully.", null);
+            }
+            catch (ArgumentException ex)
+            {
+                return ApiError<object>($"Invalid request: {ex.Message} : {ex.Data} :{ex.Source}");
+            }
+            catch (Exception ex)
+            {
+                return ApiError<object>("An unexpected error occurred while processing the request.");
             }
         }
 

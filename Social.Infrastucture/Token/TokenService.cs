@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Social.Core.Entities;
 using System.IdentityModel.Tokens.Jwt;
@@ -47,7 +48,8 @@ namespace Social.Infrastucture.Token
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(int.TryParse(_config["Jwt:ExpireTime"], out var days) ? days : 1),
+                //expires: DateTime.UtcNow.AddSeconds(20),
+                expires: DateTime.UtcNow.AddMinutes(int.TryParse(_config["Jwt:ExpireTime"], out var minutes) ? minutes : 1),
                 signingCredentials: creds
             );
 
@@ -62,6 +64,25 @@ namespace Social.Infrastucture.Token
                 rng.GetBytes(randomNumber);
                 return Convert.ToBase64String(randomNumber);
             }
+        }
+
+        static public void SaveToken(HttpContext context,string name, string token, DateTime? expires)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = expires ?? DateTime.UtcNow.AddMinutes(30)
+            };
+
+            context.Response.Cookies.Append(name, token, cookieOptions);
+        }
+
+        static public string? GetToken(HttpContext context, string name)
+        {
+            context.Request.Cookies.TryGetValue(name, out var token);
+            return token;
         }
     }
 }

@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Social.Core.Entities;
 using Social.Core.Interfaces;
 using Social.Infrastucture.Data;
 using System;
 using System.Security.Authentication;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Social.Infrastucture.Repositories
 {
@@ -14,15 +17,18 @@ namespace Social.Infrastucture.Repositories
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ApplicationDbContext _context;
+        private readonly GenralConfig _genralConfig;
 
         public UserRepository(
             UserManager<User> userManager,
             RoleManager<IdentityRole> roleManager,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            IOptions<GenralConfig> genralConfig)
         {
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _genralConfig = genralConfig.Value;
         }
 
         public async Task<User> CreateAsync(User user, string password)
@@ -327,29 +333,6 @@ namespace Social.Infrastucture.Repositories
             }
         }
 
-        public async Task<bool> ChangePassword(string userId, string currentPassword, string newPassword, string confirmPassword)
-        {
-            User? currentUser = await _context.Users.FindAsync(userId);
-            if(currentUser == null || !await _userManager.CheckPasswordAsync(currentUser, currentPassword))
-            {
-                throw new InvalidOperationException("Invalid a urrent password.");
-            }
-
-            if(newPassword != confirmPassword)
-            {
-                throw new InvalidOperationException("New password and confirmation do not match.");
-            }
-
-            var result = await _userManager.ChangePasswordAsync(currentUser, currentPassword, newPassword);
-
-            if (!result.Succeeded)
-            {
-                throw new InvalidOperationException($"Failed to change password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-            }
-
-            return true;
-        }
-
         public async Task<string> CreateRefreshTokenAsync(string userId)
         {
             var user = await _context.Users.FindAsync(userId);
@@ -394,6 +377,122 @@ namespace Social.Infrastucture.Repositories
             }
 
             return tokenEntity;
+        }
+
+        public async Task<bool> ChangePassword(string userId, string currentPassword, string newPassword, string confirmPassword)
+        {
+            User? currentUser = await _context.Users.FindAsync(userId);
+            if (currentUser == null || !await _userManager.CheckPasswordAsync(currentUser, currentPassword))
+            {
+                throw new InvalidOperationException("Invalid a urrent password.");
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                throw new InvalidOperationException("New password and confirmation do not match.");
+            }
+
+            var result = await _userManager.ChangePasswordAsync(currentUser, currentPassword, newPassword);
+
+            if (!result.Succeeded)
+            {
+                throw new InvalidOperationException($"Failed to change password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+
+            await _userManager.UpdateSecurityStampAsync(currentUser);
+
+            return true;
+        }
+
+        public async Task<string?> GeneratePasswordResetUrlAsync(string email)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+                {
+                    throw new ArgumentException("Invalid email address.", nameof(email));
+                }
+
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null /*|| !(await _userManager.IsEmailConfirmedAsync(user))*/)
+                {
+                    return null;
+                }
+
+                string token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                // Encode token for URL safety
+                string encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+                string resetUrl = $"{_genralConfig.FrontendUrl}/reset-password?email={WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(email))}&token={encodedToken}";
+                return resetUrl;
+            }
+            catch (ArgumentException ex)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to generate password reset URL.", ex);
+            }
+        }
+
+        public async Task<bool> ResetPasswordAsync(string email, string password, string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                throw new ArgumentException("Reset token is required.", nameof(token));
+            if (string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Password is required.", nameof(password));
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("Email is required.", nameof(email));
+
+            try
+            {
+                // Decode email from Base64Url if needed, otherwise use as is
+                string decodedEmail;
+                try
+                {
+                    var emailDecodedBytes = WebEncoders.Base64UrlDecode(email);
+                    decodedEmail = Encoding.UTF8.GetString(emailDecodedBytes);
+                }
+                catch (FormatException)
+                {
+                    // If decoding fails, assume email is plain
+                    decodedEmail = email;
+                }
+
+                var user = await _userManager.FindByEmailAsync(decodedEmail);
+                if (user == null)
+                {
+                    // Do not reveal user existence
+                    return false;
+                }
+
+                // Decode the token from Base64Url format
+                string decodedToken;
+                try
+                {
+                    var decodedBytes = WebEncoders.Base64UrlDecode(token);
+                    decodedToken = Encoding.UTF8.GetString(decodedBytes);
+                }
+                catch (FormatException ex)
+                {
+                    throw new ArgumentException("Invalid or malformed reset token.", nameof(token), ex);
+                }
+
+                var result = await _userManager.ResetPasswordAsync(user, decodedToken, password);
+                if (!result.Succeeded)
+                    return false;
+
+                await _userManager.UpdateSecurityStampAsync(user);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to reset password.", ex);
+            }
         }
     }
 }

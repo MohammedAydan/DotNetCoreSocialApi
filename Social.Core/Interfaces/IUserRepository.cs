@@ -24,5 +24,8 @@ namespace Social.Core.Interfaces
 
         Task<string> CreateRefreshTokenAsync(string userId);
         Task<RefreshToken?> ValidateRefreshTokenAsync(string refreshToken);
+
+        Task<string?> GeneratePasswordResetUrlAsync(string email);
+        Task<bool> ResetPasswordAsync(string email, string password, string token);
     }
 }

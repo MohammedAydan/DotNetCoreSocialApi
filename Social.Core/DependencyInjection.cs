@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Social.Core.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +13,6 @@ namespace Social.Core
     {
         public static WebApplicationBuilder AddCoreDI(this WebApplicationBuilder builder)
         {
-
-
             return builder;
         }
     }

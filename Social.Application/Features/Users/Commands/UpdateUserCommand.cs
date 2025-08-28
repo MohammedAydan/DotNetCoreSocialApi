@@ -28,9 +28,10 @@ namespace Social.Application.Features.Users.Commends
             }
 
             User? user = _mapper.Map<User>(request.UserDto);
-            var userGender = string.Equals(user.UserGender, UserGenderTypes.Male, StringComparison.OrdinalIgnoreCase)
-                ? UserGenderTypes.Male
-                : UserGenderTypes.Female;
+            var userGender =user.UserGender.ToLower() == UserGenderTypes.Female
+                ? UserGenderTypes.Female
+                : UserGenderTypes.Male;
+
             user.UserGender = userGender;
 
 

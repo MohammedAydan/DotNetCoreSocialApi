@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Social.Application.Features.Users.DTOs;
+using Social.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,9 +14,11 @@ namespace Social.Application.Features.Users.Commands
     public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, bool>
     {
         private readonly Core.Interfaces.IUserRepository _userRepository;
-        public ChangePasswordCommandHandler(Core.Interfaces.IUserRepository userRepository)
+        private readonly IEmailRepository _emailRepository;
+        public ChangePasswordCommandHandler(Core.Interfaces.IUserRepository userRepository, IEmailRepository emailRepository)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _emailRepository = emailRepository;
         }
 
         public async Task<bool> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
@@ -30,6 +33,12 @@ namespace Social.Application.Features.Users.Commands
                 request.ChangePasswordRequest.NewPassword,
                 request.ChangePasswordRequest.ConfirmPassword
             );
+
+            //if(result == true)
+            //{
+            //    //
+            //}
+
             return result;
         }
     }

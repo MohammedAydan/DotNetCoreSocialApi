@@ -19,8 +19,8 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddOpenApi();
 
 // dependency injection  
-builder.AddInfrastructureDI();
 builder.AddCoreDI();
+builder.AddInfrastructureDI();
 builder.AddApplicationDI();
 
 builder.Services.AddTransient<AuthEndpoints>();
@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
         builder =>
         {
             builder
-                .WithOrigins(["https://social.mohammed-aydan.me"])
+                .WithOrigins(["https://social.mohammed-aydan.me", "https://dev-social.mohammed-aydan.me", "https://mohammed-aydan.me"])
                 .WithOrigins(["http://localhost:3000", "http://localhost:8080", "http://localhost:5173"])
                 .AllowAnyMethod()
                 .AllowAnyHeader()

@@ -11,8 +11,8 @@ using Social.Infrastucture.Data;
 namespace Social.Infrastucture.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250827041218_AddNewCollForUserForUserGender")]
-    partial class AddNewCollForUserForUserGender
+    [Migration("20250827065419_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

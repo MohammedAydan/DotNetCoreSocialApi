@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Social.Core.Entities;
 using Social.Core.Interfaces;
@@ -18,9 +19,16 @@ namespace Social.Infrastucture
     {
         public static WebApplicationBuilder AddInfrastructureDI(this WebApplicationBuilder builder)
         {
+
+           // optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+           //    mySqlOptions => mySqlOptions.MigrationsHistoryTable("__EFMigrationsHistory")
+           //);
+
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {
-                options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection") ?? "");
+                options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection") ?? ""
+                    //,o => o.MigrationsHistoryTable("__EFMigrationsHistory", "dbo")
+                    );
             });
 
             builder.Services.AddIdentity<User, IdentityRole>()
@@ -60,6 +68,14 @@ namespace Social.Infrastucture
             builder.Services.AddScoped<ICommentRepository, CommentRepository>();
             builder.Services.AddScoped<ILikeRepository, LikeRepository>();
             builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+
+
+            // email services
+            builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+            builder.Services.AddTransient<IEmailRepository, EmailRepository>();
+
+            // genral config
+            builder.Services.Configure<GenralConfig>(builder.Configuration.GetSection("GenralConfig"));
 
             return builder;
         }

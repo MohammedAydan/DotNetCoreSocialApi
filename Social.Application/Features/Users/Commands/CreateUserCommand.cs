@@ -43,9 +43,10 @@ namespace Social.Application.Features.Users.Commands
                 var userDto = _mapper.Map<UserDto>(result);
                 userDto.Roles = roles;
 
-                var userGender = string.Equals(result.UserGender, UserGenderTypes.Male, StringComparison.OrdinalIgnoreCase)
-                    ? UserGenderTypes.Male
-                    : UserGenderTypes.Female;
+                var userGender = result.UserGender.ToLower() == UserGenderTypes.Female
+                    ? UserGenderTypes.Female
+                    : UserGenderTypes.Male;
+
                 userDto.UserGender = userGender;
 
                 return AuthResponse.Create(
