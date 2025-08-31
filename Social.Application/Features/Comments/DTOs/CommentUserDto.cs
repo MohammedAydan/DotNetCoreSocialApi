@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Social.Application.Features.Comments.DTOs
 {
-    public class CommetUserDto
+    public class CommentUserDto
     {
         public string Id { get; set; }
         public string FirstName { get; set; }

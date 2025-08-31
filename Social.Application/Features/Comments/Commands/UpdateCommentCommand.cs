@@ -26,8 +26,8 @@ namespace Social.Application.Features.Comments.Commands
 
         public async Task<CommentDto> Handle(UpdateCommentCommand request, CancellationToken cancellationToken)
         {
-            var commet = _mapper.Map<Comment>(request.UpdateComment);
-            var updatedComment = await _commentRepository.UpdateCommentAsync(commet, request.UserId);
+            var comment = _mapper.Map<Comment>(request.UpdateComment);
+            var updatedComment = await _commentRepository.UpdateCommentAsync(comment, request.UserId);
             if (updatedComment == null)
             {
                 throw new Exception("Failed to update comment.");

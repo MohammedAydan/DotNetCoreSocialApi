@@ -31,7 +31,7 @@ namespace Social.Application.Features.Users
 
             CreateMap<UpdateUserDto, User>().ReverseMap();
             CreateMap<PostUserDto, User>().ReverseMap();
-            CreateMap<CommetUserDto, User>().ReverseMap();
+            CreateMap<CommentUserDto, User>().ReverseMap();
             CreateMap<LikeUserDto, User>().ReverseMap();
         }
     }
