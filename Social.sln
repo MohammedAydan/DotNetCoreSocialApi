@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Social.Application", "Socia
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Social.Infrastucture", "Social.Infrastucture\Social.Infrastucture.csproj", "{EADAAFDE-CDCB-45EA-A4BB-A8D22CBC266C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Social.Tests", "Social.Tests\Social.Tests.csproj", "{C6D88D68-B399-41F3-9DEB-072D54C3F919}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{EADAAFDE-CDCB-45EA-A4BB-A8D22CBC266C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EADAAFDE-CDCB-45EA-A4BB-A8D22CBC266C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EADAAFDE-CDCB-45EA-A4BB-A8D22CBC266C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6D88D68-B399-41F3-9DEB-072D54C3F919}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6D88D68-B399-41F3-9DEB-072D54C3F919}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6D88D68-B399-41F3-9DEB-072D54C3F919}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6D88D68-B399-41F3-9DEB-072D54C3F919}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

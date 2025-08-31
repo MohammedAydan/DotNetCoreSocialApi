@@ -3,8 +3,19 @@ using Social.Application;
 using Social.Core;
 using Social.Infrastucture;
 using System.Text.Json.Serialization;
+using AspNetCoreRateLimit;
+using Serilog;
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/social-api-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Serilog
+builder.Host.UseSerilog();
 
 // Add services to the container.  
 
@@ -15,8 +26,16 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi  
-builder.Services.AddOpenApi();
+// Add Rate Limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
+// Learn more about configuring Swagger at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // dependency injection  
 builder.AddCoreDI();
@@ -46,15 +65,20 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.  
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "Social API");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Social API v1");
     });
 }
 
 //app.UseHttpsRedirection();
 
+// Add custom error handling middleware
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
+// Use Rate Limiting
+app.UseIpRateLimiting();
 
 // Use CORS before any redirect
 app.UseCors("AllowLocalhost");
