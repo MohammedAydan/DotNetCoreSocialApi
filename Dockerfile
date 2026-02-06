@@ -1,29 +1,31 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
+# Stage 1: Runtime Base
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-USER $APP_UID
 WORKDIR /app
+# Fly.io uses 8080 by default
 EXPOSE 8080
-EXPOSE 8081
+ENV ASPNETCORE_URLS=http://+:8080
 
-
-# This stage is used to build the service project
+# Stage 2: Build
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Copy only the project file first (to optimize caching)
+# Note: We point to the file inside the Social folder
 COPY ["Social/Social.csproj", "Social/"]
-RUN dotnet restore "./Social/Social.csproj"
+RUN dotnet restore "Social/Social.csproj"
+
+# Copy everything else
 COPY . .
 WORKDIR "/src/Social"
-RUN dotnet build "./Social.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "Social.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
+# Stage 3: Publish
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Social.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Social.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# Stage 4: Final Image
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
