@@ -1,44 +1,45 @@
-# Stage 1: Build the application
+# Stage 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy everything first to ensure we have the folder structure
+# Copy all files
 COPY . .
 
-# Find any .csproj file and restore dependencies
-# This is more flexible than hardcoding the path
+# Restore dependencies
+# The logs showed this works fine because it finds the .sln file automatically
 RUN dotnet restore
 
-# Build and Publish
-# We use the glob pattern to find the project and publish it
-RUN dotnet publish **/Social.csproj -c Release -o /app/publish
+# Publish the API project
+# FIX: Adjusted path to point to 'Social.API.csproj' based on your logs
+RUN dotnet publish "Social/Social.API.csproj" -c Release -o /app/publish
 
-# Stage 2: Create the runtime image
+# Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 
-# Install curl for health checks
+# Install utilities for Fly.io health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
+# Setup non-root user
 RUN useradd -m -u 1000 -s /bin/bash dotnetuser
 WORKDIR /app
 
-# Copy the published application
+# Copy the build artifacts
 COPY --from=build /app/publish .
 
-# Fix permissions for the non-root user
+# Permissions
 RUN chown -R dotnetuser:dotnetuser /app
 USER dotnetuser
 
-# Configure Ports for Fly.io
+# Configure Environment
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV PORT=8080
 EXPOSE 8080
 
-# Performance features
+# Performance Tuning
 ENV DOTNET_EnableDiagnostics=0
 ENV DOTNET_gcServer=1
 
-# Ensure this matches your actual DLL name
-ENTRYPOINT ["dotnet", "Social.dll"]
+# FIX: The DLL usually matches the project name. 
+# Since the project is Social.API.csproj, the DLL is Social.API.dll
+ENTRYPOINT ["dotnet", "Social.API.dll"]
