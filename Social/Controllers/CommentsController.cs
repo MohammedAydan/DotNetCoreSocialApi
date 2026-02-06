@@ -7,6 +7,7 @@ using Social.Application.Features.Comments.Queries;
 using Social.Core.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Social.API.Services.Caching;
 
 namespace Social.API.Controllers
 {
@@ -16,10 +17,12 @@ namespace Social.API.Controllers
     public class CommentsController : BaseController
     {
         private readonly ISender _sender;
+        private readonly ICacheService _cache;
 
-        public CommentsController(ISender sender)
+        public CommentsController(ISender sender, ICacheService cache)
         {
             _sender = sender;
+            _cache = cache;
         }
 
         [HttpPost]
@@ -38,6 +41,10 @@ namespace Social.API.Controllers
                     return ApiError<object>("PostId and Content are required.");
                 }
                 var result = await _sender.Send(new AddCommentCommand(commentRequest, userId));
+                
+                // Invalidate post cache (comment count changed)
+                await _cache.RemoveAsync($"post:{commentRequest.PostId}:user:{userId}");
+                
                 return ApiSuccess("Comment created successfully", result);
             }
             catch (Exception ex)
@@ -69,6 +76,10 @@ namespace Social.API.Controllers
                 }
 
                 var result = await _sender.Send(new AddReplyCommentCommand(commentRequest, userId));
+                
+                // Invalidate parent comment cache
+                await _cache.RemoveAsync($"comment:{commentRequest.ParentId}");
+                
                 return ApiSuccess("Reply comment created successfully", result);
             }
             catch (Exception ex)
@@ -96,6 +107,10 @@ namespace Social.API.Controllers
                 {
                     return ApiError<object>("Content is required.");
                 }
+                
+                // Invalidate comment cache
+                await _cache.RemoveAsync($"comment:{commentId}");
+                
                 if (commentRequest.Id != commentId)
                 {
                     return ApiError<object>("CommentId mismatch.");
@@ -121,6 +136,10 @@ namespace Social.API.Controllers
                 {
                     return ApiUnauthorized<object>("User ID is required.");
                 }
+                
+                // Invalidate comment cache
+                await _cache.RemoveAsync($"comment:{commentId}");
+                
                 if (string.IsNullOrWhiteSpace(commentId))
                 {
                     return ApiError<object>("CommentId is required.");
@@ -144,6 +163,7 @@ namespace Social.API.Controllers
                 {
                     return ApiError<object>("PostId is required.");
                 }
+                
                 var result = await _sender.Send(new GetCommentsByPostIdQuery(postId, page, limit));
                 return ApiSuccess("Comments retrieved successfully", result);
             }
@@ -154,7 +174,7 @@ namespace Social.API.Controllers
         }
 
         [HttpGet]
-        [Route("reply/{parentId}")]
+        [Route("replies/{parentId}")]
         public async Task<IActionResult> GetReplyCommentsByParentCommentId([FromRoute] string parentId)
         {
             try
@@ -182,7 +202,21 @@ namespace Social.API.Controllers
                 {
                     return ApiError<object>("CommentId is required.");
                 }
+                
+                var cacheKey = $"comment:{commentId}";
+                
+                // Try cache first
+                var cached = await _cache.GetAsync<object>(cacheKey);
+                if (cached != null)
+                {
+                    return ApiSuccess("Comment retrieved successfully (cached)", cached);
+                }
+                
                 var result = await _sender.Send(new GetCommentByIdQuery(commentId));
+                
+                // Cache for 3 minutes (single comment)
+                await _cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(3));
+                
                 return ApiSuccess("Comment retrieved successfully", result);
             }
             catch (Exception ex)

@@ -5,6 +5,7 @@ using Social.Application.Features.Notifications.Commands;
 using Social.Application.Features.Notifications.DTOs;
 using Social.Application.Features.Notifications.Queries;
 using System.Security.Claims;
+using Social.API.Services.Caching;
 
 namespace Social.API.Controllers
 {
@@ -14,10 +15,12 @@ namespace Social.API.Controllers
     public class NotificationsController : BaseController
     {
         private readonly IMediator _mediator;
+        private readonly ICacheService _cache;
 
-        public NotificationsController(IMediator mediator)
+        public NotificationsController(IMediator mediator, ICacheService cache)
         {
             _mediator = mediator;
+            _cache = cache;
         }
 
         [HttpPost]
@@ -29,6 +32,13 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<object>("User ID is required.");
 
                 var result = await _mediator.Send(new CreateNotificationCommand(createNotification));
+                
+                // Invalidate single notification cache only
+                if (result != null && result.Id != null)
+                {
+                    await _cache.RemoveAsync($"notification:{result.Id}");
+                }
+                
                 return ApiSuccess("Notification created successfully.", result);
             }
             catch (Exception ex)
@@ -42,10 +52,20 @@ namespace Social.API.Controllers
         {
             try
             {
-                if (!IsAuthorizedUser(id))
-                    return ApiUnauthorized<object>("Unauthorized access.");
-
+                var cacheKey = $"notification:{id}";
+                
+                // Try cache first
+                var cached = await _cache.GetAsync<object>(cacheKey);
+                if (cached != null)
+                {
+                    return ApiSuccess("Notification retrieved successfully (cached).", cached);
+                }
+                
                 var result = await _mediator.Send(new GetNotificationByIdQuery(id));
+                
+                // Cache for 2 minutes (notifications should be fresh)
+                await _cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(2));
+                
                 return ApiSuccess("Notification retrieved successfully.", result);
             }
             catch (Exception ex)
@@ -63,6 +83,7 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 var result = await _mediator.Send(new GetNotificationsByUserIdQuery(userId, page, limit));
+                
                 return ApiSuccess("Notifications retrieved successfully.", result);
             }
             catch (Exception ex)
@@ -80,32 +101,12 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 var result = await _mediator.Send(new GetUnreadNotificationsByUserIdQuery(userId, page, limit));
+                
                 return ApiSuccess("Unread notifications retrieved successfully.", result);
             }
             catch (Exception ex)
             {
                 return ApiServerError<object>("Failed to retrieve unread notifications.", ex.Message);
-            }
-        }
-
-        [HttpGet("user/{userId}/paged")]
-        public async Task<IActionResult> GetPagedByUserId(string userId, int page = 1, int limit = 20)
-        {
-            try
-            {
-                if (!IsAuthorizedUser(userId))
-                    return ApiUnauthorized<object>("Unauthorized access.");
-
-                var result = await _mediator.Send(new GetPagedNotificationsByUserIdQuery(userId, page, limit));
-                return ApiSuccess("Paged notifications retrieved successfully.", new
-                {
-                    data = result.Item1,
-                    total = result.Item2
-                });
-            }
-            catch (Exception ex)
-            {
-                return ApiServerError<object>("Failed to retrieve paged notifications.", ex.Message);
             }
         }
 
@@ -117,10 +118,11 @@ namespace Social.API.Controllers
                 if (!IsAuthorizedUser(dto.UserId))
                     return ApiUnauthorized<object>("Unauthorized access.");
 
-                if (id != dto.Id)
-                    return ApiError<object>("ID mismatch.");
-
                 var result = await _mediator.Send(new UpdateNotificationCommand(dto));
+                
+                // Invalidate single notification cache
+                await _cache.RemoveAsync($"notification:{id}");
+                
                 return ApiSuccess("Notification updated successfully.", result);
             }
             catch (Exception ex)
@@ -138,6 +140,10 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 await _mediator.Send(new DeleteNotificationCommand(id));
+                
+                // Invalidate single notification cache
+                await _cache.RemoveAsync($"notification:{id}");
+                
                 return ApiSuccess<object>("Notification deleted successfully.", null);
             }
             catch (Exception ex)
@@ -155,6 +161,10 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 await _mediator.Send(new MarkNotificationAsReadCommand(id));
+                
+                // Invalidate single notification cache
+                await _cache.RemoveAsync($"notification:{id}");
+                
                 return ApiSuccess<object>("Notification marked as read.", null);
             }
             catch (Exception ex)
@@ -172,6 +182,7 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 await _mediator.Send(new MarkAllNotificationsAsReadCommand(userId));
+                
                 return ApiSuccess<object>("All notifications marked as read.", null);
             }
             catch (Exception ex)
@@ -189,7 +200,8 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 await _mediator.Send(new DeleteAllNotificationsForUserCommand(userId));
-                return ApiSuccess<object>("All notifications deleted for user.", null);
+                
+                return ApiSuccess<object>("All notifications deleted successfully.", null);
             }
             catch (Exception ex)
             {

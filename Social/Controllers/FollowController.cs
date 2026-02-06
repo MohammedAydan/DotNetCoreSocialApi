@@ -8,6 +8,7 @@ using Social.Core.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Social.Application.Features.Followers.DTOs;
+using Social.API.Services.Caching;
 
 namespace Social.API.Controllers
 {
@@ -17,10 +18,12 @@ namespace Social.API.Controllers
     public class FollowController : BaseController
     {
         private readonly ISender _sender;
+        private readonly ICacheService _cache;
 
-        public FollowController(ISender sender)
+        public FollowController(ISender sender, ICacheService cache)
         {
             _sender = sender;
+            _cache = cache;
         }
 
         [HttpPost]
@@ -34,6 +37,7 @@ namespace Social.API.Controllers
                     return ApiError<object>("FollowerId and FolloweeId are required.");
                 }
                 var result = await _sender.Send(new FollowUserCommand(followRequest));
+                
                 return ApiSuccess<FollowerDto>("Follow request sent successfully", result);
             }
             catch (Exception ex)
@@ -53,6 +57,7 @@ namespace Social.API.Controllers
                     return ApiError<object>("FollowerId and FolloweeId are required.");
                 }
                 var result = await _sender.Send(new UnfollowUserCommand(unfollowRequest));
+                
                 return ApiSuccess<bool>("Unfollowed successfully", result);
             }
             catch (Exception ex)
@@ -72,6 +77,7 @@ namespace Social.API.Controllers
                     return ApiError<object>("FollowerId and FolloweeId are required.");
                 }
                 var result = await _sender.Send(new AcceptFollowCommand(acceptRequest));
+                
                 return ApiSuccess<bool>("Follow request accepted", result);
             }
             catch (Exception ex)
@@ -91,6 +97,7 @@ namespace Social.API.Controllers
                     return ApiError<object>("FollowerId and FolloweeId are required.");
                 }
                 var result = await _sender.Send(new RejectFollowCommand(rejectRequest));
+                
                 return ApiSuccess<bool>("Follow request rejected", result);
             }
             catch (Exception ex)
@@ -110,8 +117,9 @@ namespace Social.API.Controllers
                 {
                     return ApiUnauthorized<object>("User ID is required.");
                 }
-
+                
                 var result = await _sender.Send(new GetFollowersQuery(userId, page, limit));
+                
                 return ApiSuccess<IEnumerable<FollowerDto>>("Followers retrieved successfully", result);
             }
             catch (Exception ex)
@@ -131,8 +139,9 @@ namespace Social.API.Controllers
                 {
                     return ApiUnauthorized<object>("User ID is required.");
                 }
-
+                
                 var result = await _sender.Send(new GetFollowingQuery(userId, page, limit));
+                
                 return ApiSuccess<IEnumerable<FollowerDto>>("Following list retrieved successfully", result);
             }
             catch (Exception ex)
@@ -152,8 +161,9 @@ namespace Social.API.Controllers
                 {
                     return ApiUnauthorized<object>("User ID is required.");
                 }
-
+                
                 var result = await _sender.Send(new GetPendingFollowRequestQuery(userId, page, limit));
+                
                 return ApiSuccess<IEnumerable<FollowerDto>>("Pending follow requests retrieved successfully", result);
             }
             catch (Exception ex)

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Social.Core.Common;
+using Social.API.Services.Caching;
 
 namespace Social.API.Controllers
 {
@@ -16,10 +17,12 @@ namespace Social.API.Controllers
     public class LikeController : BaseController
     {
         private readonly ISender _sender;
+        private readonly ICacheService _cache;
 
-        public LikeController(ISender sender)
+        public LikeController(ISender sender, ICacheService cache)
         {
             _sender = sender;
+            _cache = cache;
         }
 
         [HttpPost]
@@ -37,6 +40,10 @@ namespace Social.API.Controllers
                     return ApiError<object>("PostId is required.");
                 }
                 var result = await _sender.Send(new AddOrRemoveLikeCommand(likeRequest, userId));
+                
+                // Invalidate post cache (like count changed)
+                await _cache.RemoveAsync($"post:{likeRequest.PostId}:user:{userId}");
+                
                 return ApiSuccess<bool>("Like operation completed successfully", result);
             }
             catch (Exception ex)
@@ -61,7 +68,9 @@ namespace Social.API.Controllers
                 {
                     return ApiError<object>("PostId is required.");
                 }
+                
                 var result = await _sender.Send(new GetLikesByPostIdQuery(postId, page, limit));
+                
                 return ApiSuccess<IEnumerable<LikeDto>>("Likes retrieved successfully", result);
             }
             catch (Exception ex)

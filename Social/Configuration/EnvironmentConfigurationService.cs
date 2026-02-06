@@ -72,6 +72,11 @@ namespace Social.API.Configuration
                 ["EmailSettings:Username"] = GetEnvironmentVariable("EMAIL_USERNAME"),
                 ["EmailSettings:Password"] = GetEnvironmentVariable("EMAIL_PASSWORD"),
                 ["EmailSettings:EnableSSL"] = GetEnvironmentVariable("EMAIL_ENABLE_SSL") ?? "true",
+
+                // Redis Settings (Optional)
+                ["Redis:Endpoint"] = GetEnvironmentVariable("REDIS_ENDPOINT"),
+                ["Redis:Username"] = GetEnvironmentVariable("REDIS_USERNAME"),
+                ["Redis:Password"] = GetEnvironmentVariable("REDIS_PASSWORD"),
             };
         }
 

@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Social.Core.Common;
 using Social.API.Controllers;
+using Social.API.Services.Caching;
 
 namespace Social.Api.Controllers
 {
@@ -17,10 +18,12 @@ namespace Social.Api.Controllers
     public class PostsController : BaseController
     {
         private readonly IMediator _mediator;
+        private readonly ICacheService _cache;
 
-        public PostsController(IMediator mediator)
+        public PostsController(IMediator mediator, ICacheService cache)
         {
             _mediator = mediator;
+            _cache = cache;
         }
 
         [HttpPost]
@@ -33,6 +36,7 @@ namespace Social.Api.Controllers
             {
                 var userId = GetUserId();
                 var post = await _mediator.Send(new AddPostCommand(createPost, userId));
+                
                 return ApiSuccess("Post created successfully", post);
             }
             catch (Exception ex)
@@ -115,7 +119,21 @@ namespace Social.Api.Controllers
             try
             {
                 var userId = GetUserId();
+                var cacheKey = $"post:{postId}:user:{userId}";
+                
+                // Try to get from cache first
+                var cachedPost = await _cache.GetAsync<PostDto>(cacheKey);
+                if (cachedPost != null)
+                {
+                    return ApiSuccess("Post retrieved successfully (cached)", cachedPost);
+                }
+                
+                // Get from database
                 var post = await _mediator.Send(new GetPostByIdQuery(postId, userId));
+                
+                // Cache for 5 minutes
+                await _cache.SetAsync(cacheKey, post, TimeSpan.FromMinutes(5));
+                
                 return ApiSuccess("Post retrieved successfully", post);
             }
             catch (Exception ex)
@@ -134,6 +152,10 @@ namespace Social.Api.Controllers
             {
                 var userId = GetUserId();
                 var post = await _mediator.Send(new UpdatePostCommand(updatePost, userId));
+                
+                // Invalidate single post cache
+                await _cache.RemoveAsync($"post:{updatePost.Id}:user:{userId}");
+                
                 return ApiSuccess("Post updated successfully", post);
             }
             catch (Exception ex)
@@ -152,6 +174,13 @@ namespace Social.Api.Controllers
             {
                 var userId = GetUserId();
                 var result = await _mediator.Send(new DeletePostCommand(postId, userId));
+                
+                if (result)
+                {
+                    // Invalidate single post cache
+                    await _cache.RemoveAsync($"post:{postId}:user:{userId}");
+                }
+                
                 return result ? ApiSuccess<object>("Post deleted successfully", null) : ApiNotFound<object>("Post not found or access denied.");
             }
             catch (Exception ex)

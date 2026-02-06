@@ -1,4 +1,5 @@
 using DotNetEnv;
+using Social.API.Configuration;
 using Social.API.Extensions;
 using Social.API.Middlewares;
 using Social.Application;
@@ -10,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Load environment configuration
 builder.AddEnvironmentConfiguration();
+
+// Add Redis caching
+builder.AddRedisCache();
 
 // Add services to the container.  
 

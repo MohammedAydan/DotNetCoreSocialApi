@@ -9,6 +9,7 @@ using Social.Core.Common;
 using Social.Core.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Social.API.Services.Caching;
 
 namespace Social.API.Controllers
 {
@@ -17,10 +18,12 @@ namespace Social.API.Controllers
     public class UserController : BaseController
     {
         private readonly ISender _sender;
+        private readonly ICacheService _cache;
 
-        public UserController(ISender sender)
+        public UserController(ISender sender, ICacheService cache)
         {
             _sender = sender;
+            _cache = cache;
         }
 
         [HttpPost("register")]
@@ -248,12 +251,24 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<UserDto>("User ID not found in token.");
                 }
 
+                var cacheKey = $"user:profile:{userId}";
+                
+                // Try cache first
+                var cached = await _cache.GetAsync<UserDto>(cacheKey);
+                if (cached != null)
+                {
+                    return ApiSuccess("User retrieved successfully (cached)", cached);
+                }
+                
                 var user = await _sender.Send(new GetUserByIdQuery(userId));
                 if (user == null)
                 {
                     return ApiNotFound<object>("User not found.");
                 }
 
+                // Cache for 15 minutes (user profile doesn't change often)
+                await _cache.SetAsync(cacheKey, user, TimeSpan.FromMinutes(15));
+                
                 return ApiSuccess("User retrieved successfully", user);
             }
             catch (Exception ex)
@@ -275,12 +290,24 @@ namespace Social.API.Controllers
                     return ApiUnauthorized<UserDto>("User ID not found in token.");
                 }
 
+                var cacheKey = $"user:profile:{userId}";
+                
+                // Try cache first
+                var cached = await _cache.GetAsync<UserDto>(cacheKey);
+                if (cached != null)
+                {
+                    return ApiSuccess("User retrieved successfully (cached)", cached);
+                }
+                
                 var user = await _sender.Send(new GetUserByIdQuery(userId, myUserId));
                 if (user == null)
                 {
                     return ApiNotFound<object>("User not found.");
                 }
 
+                // Cache for 15 minutes
+                await _cache.SetAsync(cacheKey, user, TimeSpan.FromMinutes(15));
+                
                 return ApiSuccess("User retrieved successfully", user);
             }
             catch (Exception ex)
@@ -296,9 +323,9 @@ namespace Social.API.Controllers
             try
             {
                 //var myUserId = GetUserId() ?? null;
-
+                
                 var result = await _sender.Send(new SearchUsersQuery(q, userId, page, limit));
-
+                
                 return ApiSuccess<IEnumerable<UserDto>>("Users retrieved successfully", result.Results);
             }
             catch (Exception ex)
@@ -328,6 +355,9 @@ namespace Social.API.Controllers
                     return ApiNotFound<object>("User not found.");
                 }
 
+                // Invalidate user profile cache only
+                await _cache.RemoveAsync($"user:profile:{userDto.Id}");
+                
                 return ApiSuccess<UserDto>("User updated successfully", result);
             }
             catch (Exception ex)
@@ -354,6 +384,9 @@ namespace Social.API.Controllers
                     return ApiNotFound<object>("User not found.");
                 }
 
+                // Invalidate user profile cache only
+                await _cache.RemoveAsync($"user:profile:{userId}");
+                
                 return ApiSuccess<object>("User deleted successfully.", null);
             }
             catch (Exception ex)
