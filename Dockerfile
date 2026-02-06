@@ -1,32 +1,31 @@
-# Stage 1: Runtime Base
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-WORKDIR /app
-# Fly.io uses 8080 by default
-EXPOSE 8080
-ENV ASPNETCORE_URLS=http://+:8080
-
-# Stage 2: Build
+# STAGE 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Copy only the project file first (to optimize caching)
-# Note: We point to the file inside the Social folder
-COPY ["Social/Social.csproj", "Social/"]
+# 1. Copy everything first to avoid "path not found" errors
+COPY . .
+
+# 2. Restore dependencies 
+# This looks for the .csproj file automatically inside the Social folder
 RUN dotnet restore "Social/Social.csproj"
 
-# Copy everything else
-COPY . .
+# 3. Build and Publish
+# We move into the project folder to ensure the build context is correct
 WORKDIR "/src/Social"
-RUN dotnet build "Social.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet publish "Social.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Stage 3: Publish
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "Social.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-# Stage 4: Final Image
-FROM base AS final
+# STAGE 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+
+# Fly.io requirements: Listen on 8080
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+# Turn off Globalization invariant if you use Culture-specific logic (optional)
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
+# Copy the build output
+COPY --from=build /app/publish .
+
+# The entry point must match your project output DLL name
 ENTRYPOINT ["dotnet", "Social.dll"]
