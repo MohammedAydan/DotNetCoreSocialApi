@@ -1,31 +1,52 @@
-# STAGE 1: Build
+# Stage 1: Build the application
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+
+# Set the working directory
 WORKDIR /src
 
-# 1. Copy everything first to avoid "path not found" errors
-COPY . .
-
-# 2. Restore dependencies 
-# This looks for the .csproj file automatically inside the Social folder
+# Copy the specific csproj from the Social folder
+# This matches your project structure: Social/Social.csproj
+COPY ["Social/Social.csproj", "Social/"]
 RUN dotnet restore "Social/Social.csproj"
 
-# 3. Build and Publish
-# We move into the project folder to ensure the build context is correct
-WORKDIR "/src/Social"
-RUN dotnet publish "Social.csproj" -c Release -o /app/publish /p:UseAppHost=false
+# Copy the rest of the source code
+COPY . .
 
-# STAGE 2: Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+# Build the application
+# We move to the project folder to publish
+WORKDIR "/src/Social"
+RUN dotnet publish "Social.csproj" -c Release -o /app/publish --no-restore
+
+# Stage 2: Create the runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+
+# Install curl for health checks (useful for Fly.io)
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user for security
+RUN useradd -m -u 1000 -s /bin/bash dotnetuser
+
+# Set the working directory
 WORKDIR /app
 
-# Fly.io requirements: Listen on 8080
-EXPOSE 8080
-ENV ASPNETCORE_URLS=http://+:8080
-# Turn off Globalization invariant if you use Culture-specific logic (optional)
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
-
-# Copy the build output
+# Copy the published application
 COPY --from=build /app/publish .
 
-# The entry point must match your project output DLL name
+# Change ownership
+RUN chown -R dotnetuser:dotnetuser /app
+
+# Switch to the non-root user
+USER dotnetuser
+
+# Configure Ports for Fly.io
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV PORT=8080
+EXPOSE 8080
+
+# Performance features
+ENV DOTNET_EnableDiagnostics=0
+ENV DOTNET_gcServer=1
+
+# Ensure the DLL name matches your project
 ENTRYPOINT ["dotnet", "Social.dll"]
