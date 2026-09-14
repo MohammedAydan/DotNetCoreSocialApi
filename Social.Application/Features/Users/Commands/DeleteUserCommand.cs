@@ -1,15 +1,15 @@
 ﻿using MediatR;
 using Social.Core.Interfaces;
 
-namespace Social.Application.Features.Users.Commends
+namespace Social.Application.Features.Users.Commands
 {
     public record DeleteUserCommand(string userId) : IRequest<bool>;
 
-    public class DeleteUserCommendHandler : IRequestHandler<DeleteUserCommand, bool>
+    public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand, bool>
     {
         private readonly IUserRepository _userRepository;
 
-        public DeleteUserCommendHandler(IUserRepository userRepository)
+        public DeleteUserCommandHandler(IUserRepository userRepository)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }

@@ -1,9 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Social.Core
 {
     public static class MediaTypes
@@ -15,28 +9,29 @@ namespace Social.Core
         public const string Text = "text";
         public const string Application = "application";
 
-        public class Actions
+        [Obsolete("Use NotificationActionTypes instead.")]
+        public static class Actions
         {
-            public const string Create = "create";
-            public const string Read = "read";
-            public const string Update = "update";
-            public const string Delete = "delete";
-            public const string Like = "like";
-            public const string Comment = "comment";
-            public const string CommentReply = "comment-reply";
-            public const string Share = "share";
-            public const string Follow = "follow"; 
-            public const string FollowRequest = "follow-request";
-            public const string AcceptFollowRequest = "accept-follow-request";
-            public const string RejectFollowRequest = "reject-follow-request";
-            public const string CancelFollowRequest = "cancel-follow-request";
-            public const string Accept = "accept";
-            public const string Unfollow = "unfollow";
-            public const string Block = "block";
-            public const string Unblock = "unblock";
-            public const string Report = "report";
-            public const string Mute = "mute";
-            public const string Unmute = "unmute";
+            public const string Create = NotificationActionTypes.Create;
+            public const string Read = NotificationActionTypes.Read;
+            public const string Update = NotificationActionTypes.Update;
+            public const string Delete = NotificationActionTypes.Delete;
+            public const string Like = NotificationActionTypes.Like;
+            public const string Comment = NotificationActionTypes.Comment;
+            public const string CommentReply = NotificationActionTypes.CommentReply;
+            public const string Share = NotificationActionTypes.Share;
+            public const string Follow = NotificationActionTypes.Follow; 
+            public const string FollowRequest = NotificationActionTypes.FollowRequest;
+            public const string AcceptFollowRequest = NotificationActionTypes.AcceptFollowRequest;
+            public const string RejectFollowRequest = NotificationActionTypes.RejectFollowRequest;
+            public const string CancelFollowRequest = NotificationActionTypes.CancelFollowRequest;
+            public const string Accept = NotificationActionTypes.Accept;
+            public const string Unfollow = NotificationActionTypes.Unfollow;
+            public const string Block = NotificationActionTypes.Block;
+            public const string Unblock = NotificationActionTypes.Unblock;
+            public const string Report = NotificationActionTypes.Report;
+            public const string Mute = NotificationActionTypes.Mute;
+            public const string Unmute = NotificationActionTypes.Unmute;
         }
     }
 }

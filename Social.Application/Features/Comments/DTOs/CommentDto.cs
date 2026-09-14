@@ -1,4 +1,4 @@
-﻿using Social.Application.Features.Users.DTOs;
+using Social.Application.Features.Users.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ namespace Social.Application.Features.Comments.DTOs
         public string LastName { get; set; }
         public string PostId { get; set; }
         public string UserId { get; set; }
-        public CommetUserDto User { get; set; }
+        public CommentUserDto User { get; set; }
         public string Content { get; set; }
         public string ParentId { get; set; }
         public int RepliesCount { get; set; }

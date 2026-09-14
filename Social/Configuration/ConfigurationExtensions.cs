@@ -28,15 +28,17 @@ namespace Social.API.Extensions
             // Register the configuration service
             builder.Services.AddScoped<EnvironmentConfigurationService>();
 
-            // Get the service from the service provider
-            var serviceProvider = builder.Services.BuildServiceProvider();
-            var configService = serviceProvider.GetRequiredService<EnvironmentConfigurationService>();
+            // Build service provider for initial configuration only, and dispose it properly
+            using (var serviceProvider = builder.Services.BuildServiceProvider())
+            {
+                var configService = serviceProvider.GetRequiredService<EnvironmentConfigurationService>();
 
-            // Load all configurations
-            var configurations = configService.LoadAllConfigurations();
+                // Load all configurations
+                var configurations = configService.LoadAllConfigurations();
 
-            // Add configurations to IConfiguration
-            builder.Configuration.AddInMemoryCollection(configurations);
+                // Add configurations to IConfiguration
+                builder.Configuration.AddInMemoryCollection(configurations);
+            } // Service provider is properly disposed here
 
             return builder;
         }

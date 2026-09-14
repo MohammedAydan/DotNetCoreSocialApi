@@ -62,7 +62,7 @@ namespace Social.API.Configuration
                 ["ApiSettings:ApiKey"] = GetEnvironmentVariable("API_KEY", required: true),
 
                 // General Config (Required)
-                ["GenralConfig:FrontendUrl"] = GetEnvironmentVariable("FRONTEND_URL", required: true),
+                ["GeneralConfig:FrontendUrl"] = GetEnvironmentVariable("FRONTEND_URL", required: true),
 
                 // Email Settings (Optional)
                 ["EmailSettings:SmtpServer"] = GetEnvironmentVariable("EMAIL_SMTP_SERVER"),

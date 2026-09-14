@@ -1,21 +1,24 @@
-﻿using Microsoft.AspNetCore.Builder;
+using FluentValidation;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Social.Application.Behaviors;
 
 namespace Social.Application
 {
     public static class DependencyInjection
     {
-        public static WebApplicationBuilder AddApplicationDI(this WebApplicationBuilder builder)
+        public static IServiceCollection AddApplicationDI(this IServiceCollection services)
         {
-            builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly)); 
-            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            });
 
-            return builder;
+            services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+            return services;
         }
     }
 }

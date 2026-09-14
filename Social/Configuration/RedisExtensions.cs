@@ -1,5 +1,7 @@
-using Social.API.Services.Caching;
+using Social.Core.Interfaces;
+using Social.Infrastructure.Caching;
 using StackExchange.Redis;
+using Microsoft.Extensions.Logging;
 
 namespace Social.API.Configuration
 {
@@ -21,7 +23,7 @@ namespace Social.API.Configuration
             // Skip Redis configuration if not provided
             if (string.IsNullOrWhiteSpace(redisEndpoint))
             {
-                builder.Services.AddSingleton<ICacheService, InMemoryCacheService>();
+                builder.Services.AddSingleton<Social.Core.Interfaces.ICacheService, InMemoryCacheService>();
                 Console.WriteLine("[ℹ] Redis is not configured. Using in-memory cache fallback.");
                 return builder;
             }
@@ -60,16 +62,31 @@ namespace Social.API.Configuration
 
                 // Register as singleton
                 builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-                builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+                builder.Services.AddSingleton<Social.Core.Interfaces.ICacheService, RedisCacheService>();
 
                 var maskedEndpoint = redisEndpoint.Split(':')[0] + ":***";
                 Console.WriteLine($"[✓] Redis connected successfully to: {maskedEndpoint}");
             }
             catch (Exception ex)
             {
+                var productionWarning = builder.Environment.IsProduction()
+                    ? "\n[❌] WARNING: Production environment detected but Redis connection failed. In-memory cache has limited capacity and will not persist across restarts."
+                    : "";
+
                 Console.WriteLine($"[⚠] Failed to connect to Redis: {ex.Message}");
-                Console.WriteLine("[ℹ] Using in-memory cache fallback.");
-                builder.Services.AddSingleton<ICacheService, InMemoryCacheService>();
+                Console.WriteLine($"[⚠] Redis endpoint: {redisEndpoint}");
+                Console.WriteLine($"[ℹ] Using in-memory cache fallback. This is NOT recommended for production environments.{productionWarning}");
+
+                builder.Services.AddSingleton<Social.Core.Interfaces.ICacheService, InMemoryCacheService>();
+
+                // In production, consider throwing an exception instead of silently falling back
+                // Uncomment the line below to enforce Redis in production
+                // if (builder.Environment.IsProduction())
+                // {
+                //     throw new InvalidOperationException(
+                //         "Redis connection is required in production environment. " +
+                //         $"Failed to connect to {redisEndpoint}. Details: {ex.Message}");
+                // }
             }
 
             return builder;

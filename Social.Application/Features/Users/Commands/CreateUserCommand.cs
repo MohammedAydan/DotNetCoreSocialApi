@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using MediatR;
 using Social.Application.Features.Users.DTOs;
 using Social.Core.Interfaces;
@@ -13,9 +13,9 @@ namespace Social.Application.Features.Users.Commands
     {
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
-        private readonly Infrastucture.Token.ITokenService _tokenService;
+        private readonly ITokenService _tokenService;
 
-        public CreateUserCommandHandler(IUserRepository userRepository, IMapper mapper, Infrastucture.Token.ITokenService tokenService)
+        public CreateUserCommandHandler(IUserRepository userRepository, IMapper mapper, ITokenService tokenService)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -43,7 +43,7 @@ namespace Social.Application.Features.Users.Commands
                 var userDto = _mapper.Map<UserDto>(result);
                 userDto.Roles = roles;
 
-                var userGender = result.UserGender.ToLower() == UserGenderTypes.Female
+                var userGender = !string.IsNullOrEmpty(result.UserGender) && result.UserGender.ToLower() == UserGenderTypes.Female
                     ? UserGenderTypes.Female
                     : UserGenderTypes.Male;
 
@@ -56,12 +56,11 @@ namespace Social.Application.Features.Users.Commands
                     refreshToken: refreshToken
                 );
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // log exception internally
                 return AuthResponse.Create(
                     message: "An error occurred during user creation.",
-                    errors: new List<string> { "Unexpected error" }
+                    errors: new List<string> { ex.Message }
                 );
             }
         }

@@ -5,7 +5,7 @@ using Social.Core.Interfaces;
 using Social.Core.Entities;
 
 
-namespace Social.Application.Features.Users.Commends
+namespace Social.Application.Features.Users.Commands
 {
     public record SignInCommand(SignIn SignIn) : IRequest<AuthResponse>;
 
@@ -13,9 +13,9 @@ namespace Social.Application.Features.Users.Commends
     {
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
-        private readonly Infrastucture.Token.ITokenService _tokenService;
+        private readonly Social.Core.Interfaces.ITokenService _tokenService;
 
-        public SignInCommandHandler(IUserRepository userRepository, IMapper mapper, Infrastucture.Token.ITokenService tokenService)
+        public SignInCommandHandler(IUserRepository userRepository, IMapper mapper, Social.Core.Interfaces.ITokenService tokenService)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));

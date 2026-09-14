@@ -1,14 +1,10 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Social.Application.Features.Comments.DTOs;
 using Social.Application.Features.Like.DTOs;
 using Social.Application.Features.Posts.DTOs;
 using Social.Application.Features.Users.DTOs;
 using Social.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Social.Application.Features.Users
 {
@@ -31,6 +27,7 @@ namespace Social.Application.Features.Users
 
             CreateMap<UpdateUserDto, User>().ReverseMap();
             CreateMap<PostUserDto, User>().ReverseMap();
+            CreateMap<CommentUserDto, User>().ReverseMap();
             CreateMap<CommetUserDto, User>().ReverseMap();
             CreateMap<LikeUserDto, User>().ReverseMap();
         }

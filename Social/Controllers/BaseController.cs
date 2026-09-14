@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Social.Core.Common;
 
@@ -5,12 +6,17 @@ namespace Social.API.Controllers
 {
     public abstract class BaseController : ControllerBase
     {
-        protected IActionResult ApiSuccess<T>(string message, T data)
+        protected string GetUserId()
+        {
+            return User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        }
+
+        protected IActionResult ApiSuccess<T>(string message, T? data)
         {
             return Ok(ApiResponse<T>.SuccessResponse(message, data));
         }
 
-        protected IActionResult ApiError<T>(string message, object errors = null)
+        protected IActionResult ApiError<T>(string message, object? errors = null)
         {
             return BadRequest(ApiResponse<T>.ErrorResponse(message, errors));
         }
@@ -25,7 +31,7 @@ namespace Social.API.Controllers
             return Unauthorized(ApiResponse<T>.ErrorResponse(message));
         }
 
-        protected IActionResult ApiServerError<T>(string message = "An error occurred", object errors = null)
+        protected IActionResult ApiServerError<T>(string message = "An error occurred", object? errors = null)
         {
             return StatusCode(500, ApiResponse<T>.ErrorResponse(message, errors));
         }

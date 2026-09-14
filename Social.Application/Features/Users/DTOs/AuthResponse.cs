@@ -1,8 +1,10 @@
-﻿
+
 namespace Social.Application.Features.Users.DTOs
 {
     public class AuthResponse
     {
+        public AuthResponse() { }
+
         public AuthResponse(
             string? message = null,
             List<string>? errors = null,
@@ -16,6 +18,7 @@ namespace Social.Application.Features.Users.DTOs
             Message = message;
             Errors = errors;
             User = user;
+            Token = token;
             Type = type;
             AccessToken = accessToken;
             RefreshToken = refreshToken;
@@ -24,6 +27,7 @@ namespace Social.Application.Features.Users.DTOs
         public string? Message { get; set; }
         public List<string>? Errors { get; set; }
         public UserDto? User { get; set; }
+        public string? Token { get; set; }
         public string? Type { get; set; }
         public string? AccessToken { get; set; }
         public string? RefreshToken { get; set; }
@@ -37,7 +41,8 @@ namespace Social.Application.Features.Users.DTOs
             string? type = null,
             string? accessToken = null,
             string? refreshToken = null
-            ) {
+            )
+        {
             return new AuthResponse(
                 message: message,
                 errors: errors,
@@ -48,5 +53,6 @@ namespace Social.Application.Features.Users.DTOs
                 refreshToken: refreshToken
             );
         }
+        public bool IsAdmin() => User?.Roles?.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase)) ?? false;
     }
 }

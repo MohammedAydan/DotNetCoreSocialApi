@@ -1,11 +1,11 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Social.Application.Features.Notifications.Commands;
 using Social.Application.Features.Notifications.DTOs;
 using Social.Application.Features.Notifications.Queries;
 using System.Security.Claims;
-using Social.API.Services.Caching;
+using Social.Core.Interfaces;
 
 namespace Social.API.Controllers
 {
@@ -207,11 +207,6 @@ namespace Social.API.Controllers
             {
                 return ApiServerError<object>("Failed to delete all notifications for user.", ex.Message);
             }
-        }
-
-        private string GetUserId()
-        {
-            return User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
         }
 
         private bool IsAuthorizedUser(string userId)

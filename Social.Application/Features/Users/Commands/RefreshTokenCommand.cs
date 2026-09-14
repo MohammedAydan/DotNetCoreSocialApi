@@ -1,8 +1,7 @@
-﻿using AutoMapper;
+using AutoMapper;
 using MediatR;
 using Social.Application.Features.Users.DTOs;
 using Social.Core.Interfaces;
-using Social.Infrastucture.Token;
 
 namespace Social.Application.Features.Users.Commands
 {
@@ -67,7 +66,7 @@ namespace Social.Application.Features.Users.Commands
                     errors: errors
                 );
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 errors.Add("Unexpected error");
                 return AuthResponse.Create(

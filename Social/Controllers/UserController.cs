@@ -1,15 +1,15 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Social.Application.Features.Users.Commands;
-using Social.Application.Features.Users.Commends;
 using Social.Application.Features.Users.DTOs;
 using Social.Application.Features.Users.Queries;
 using Social.Core.Common;
 using Social.Core.Entities;
+using Social.Core.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Social.API.Services.Caching;
+// using Social.API.Services.Caching;
 
 namespace Social.API.Controllers
 {
@@ -19,11 +19,13 @@ namespace Social.API.Controllers
     {
         private readonly ISender _sender;
         private readonly ICacheService _cache;
+        private readonly ITokenService _tokenService;
 
-        public UserController(ISender sender, ICacheService cache)
+        public UserController(ISender sender, ICacheService cache, ITokenService tokenService)
         {
             _sender = sender;
             _cache = cache;
+            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
         }
 
         [HttpPost("register")]
@@ -154,7 +156,7 @@ namespace Social.API.Controllers
             {
                 return ApiError<object>($"Invalid request: {ex.Message}");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return ApiError<object>("An unexpected error occurred while processing the request.");
             }
@@ -204,7 +206,7 @@ namespace Social.API.Controllers
             {
                 return ApiError<object>($"Invalid request: {ex.Message} : {ex.Data} :{ex.Source}");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return ApiError<object>("An unexpected error occurred while processing the request.");
             }
@@ -230,7 +232,41 @@ namespace Social.API.Controllers
                 {
                     return ApiError<object>("Password change failed.", new List<string> { "Unknown error occurred." });
                 }
+
+                // Blacklist the current token after password change
+                var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    await _tokenService.BlacklistTokenAsync(token, TimeSpan.FromHours(1));
+                }
+
                 return ApiSuccess<object>("Password changed successfully", null);
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>($"An error occurred: {ex.Message}");
+            }
+        }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            try
+            {
+                var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    return ApiError<object>("No access token found in request.");
+                }
+
+                var result = await _sender.Send(new LogoutCommand(token));
+                if (!result.Success)
+                {
+                    return ApiError<object>(result.Message);
+                }
+
+                return ApiSuccess("Logged out successfully", result.Data);
             }
             catch (Exception ex)
             {
@@ -394,11 +430,5 @@ namespace Social.API.Controllers
                 return ApiServerError<UserDto>($"An error occurred: {ex.Message}");
             }
         }
-
-        private string GetUserId()
-        {
-            return User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-        }
-
     }
 }

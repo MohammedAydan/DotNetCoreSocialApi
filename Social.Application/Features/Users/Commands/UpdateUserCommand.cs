@@ -1,21 +1,20 @@
 ﻿using AutoMapper;
 using MediatR;
-using MySqlX.XDevAPI.Common;
 using Social.Application.Features.Users.DTOs;
 using Social.Core;
 using Social.Core.Entities;
 using Social.Core.Interfaces;
 
-namespace Social.Application.Features.Users.Commends
+namespace Social.Application.Features.Users.Commands
 {
     public record UpdateUserCommand(UpdateUserDto UserDto) : IRequest<UserDto>;
 
-    public class UpdateUserCommedHandler : IRequestHandler<UpdateUserCommand, UserDto>
+    public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserDto>
     {
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
 
-        public UpdateUserCommedHandler(IUserRepository userRepository, IMapper mapper)
+        public UpdateUserCommandHandler(IUserRepository userRepository, IMapper mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _mapper = mapper;

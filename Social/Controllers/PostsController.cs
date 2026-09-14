@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Social.Application.Features.Posts.Commands;
 using Social.Application.Features.Posts.Queries;
@@ -7,10 +7,9 @@ using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Social.Core.Common;
-using Social.API.Controllers;
-using Social.API.Services.Caching;
+using Social.Core.Interfaces;
 
-namespace Social.Api.Controllers
+namespace Social.API.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
@@ -187,11 +186,6 @@ namespace Social.Api.Controllers
             {
                 return ApiServerError<object>($"An error occurred: {ex.Message}");
             }
-        }
-
-        private string GetUserId()
-        {
-            return User?.Claims.FirstOrDefault(c =>c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
         }
     }
 }

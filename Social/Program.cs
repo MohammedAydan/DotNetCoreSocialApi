@@ -1,11 +1,13 @@
 using DotNetEnv;
+using Microsoft.OpenApi.Models;
 using Social.API.Configuration;
 using Social.API.Extensions;
 using Social.API.Middlewares;
 using Social.Application;
 using Social.Core;
-using Social.Infrastucture;
+using Social.Infrastructure;
 using System.Text.Json.Serialization;
+using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,14 +27,59 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi  
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info.Title = "Social API";
+        document.Info.Version = "v1";
+        
+        // Add security scheme
+        document.Components ??= new();
+        document.Components.SecuritySchemes ??= new Dictionary<string, OpenApiSecurityScheme>();
+        
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token."
+        };
+        
+        // Add security requirement
+        document.SecurityRequirements = new List<OpenApiSecurityRequirement>
+        {
+            new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                }] = Array.Empty<string>()
+            }
+        };
+        
+        return Task.CompletedTask;
+    });
+});
 
 // dependency injection  
-builder.AddCoreDI();
+builder.Services.AddCoreDI();
 builder.AddInfrastructureDI();
-builder.AddApplicationDI();
+builder.Services.AddApplicationDI();
 
 builder.Services.AddTransient<AuthEndpoints>();
+
+// Add rate limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 // Add CORS policy
 builder.Services.AddCors(options =>
@@ -42,9 +89,9 @@ builder.Services.AddCors(options =>
         {
             builder
                 .WithOrigins([
-                    "https://social.mohammed-aydan.me",
-                    "https://dev-social.mohammed-aydan.me",
-                    "https://mohammed-aydan.me",
+                    "https://social.mohammed-aydan.site",
+                    "https://dev-social.mohammed-aydan.site",
+                    "https://mohammed-aydan.site",
                     "https://social-eg.vercel.app"
                      ])
                 .WithOrigins(["http://localhost:3000", "http://localhost:8080", "http://localhost:5173"])
@@ -73,14 +120,25 @@ if (app.Environment.IsDevelopment())
 // Use CORS before any redirect
 app.UseCors("AllowLocalhost");
 
+// Global exception handling
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Rate limiting
+app.UseIpRateLimiting();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), appBuilder =>
-{
-    appBuilder.UseMiddleware<AuthEndpoints>();
-});
+// Token blacklist middleware
+app.UseMiddleware<TokenBlacklistMiddleware>();
+
+// app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), appBuilder =>
+// {
+//     appBuilder.UseMiddleware<AuthEndpoints>();
+// });
 
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

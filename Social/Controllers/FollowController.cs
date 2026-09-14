@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Social.Application.Features.Follow.Commands;
 using Social.Application.Features.Follow.Queries;
 using Social.Application.Features.Follow.DTOs;
@@ -8,7 +8,7 @@ using Social.Core.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Social.Application.Features.Followers.DTOs;
-using Social.API.Services.Caching;
+using Social.Core.Interfaces;
 
 namespace Social.API.Controllers
 {
@@ -170,11 +170,6 @@ namespace Social.API.Controllers
             {
                 return ApiServerError<object>($"An error occurred: {ex.Message}");
             }
-        }
-
-        private string GetUserId()
-        {
-            return User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
         }
     }
 }

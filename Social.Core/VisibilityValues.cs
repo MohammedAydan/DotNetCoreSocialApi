@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Social.Core
 {
     public static class VisibilityValues
     {
-        public static string PUBLIC = "public";
-        public static string PRIVATE = "private";
+        public const string Public = "public";
+        public const string Private = "private";
+
+        [Obsolete("Use Public instead.")]
+        public const string PUBLIC = Public;
+        [Obsolete("Use Private instead.")]
+        public const string PRIVATE = Private;
     }
 }
