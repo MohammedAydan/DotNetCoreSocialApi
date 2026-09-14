@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Publish WebDeploy (Use MSBuild)",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "msbuild",
+                "${workspaceFolder}/Social/Social.API.csproj",
+                "/p:DeployOnBuild=true",
+                "/p:PublishProfile=SocialApi.runasp.net.pubxml",
+                "/p:Configuration=Release"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Publish WebDeploy (Stable)",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "publish",
+                "${workspaceFolder}/Social/Social.API.csproj",
+                "-c",
+                "Release",
+                "/p:PublishProfile=SocialApi.runasp.net.pubxml",
+                "/p:DisableAppOffline=true"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

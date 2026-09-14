@@ -1,0 +1,30 @@
+# Tasks: Test Suites & Codebase Improvements
+
+- [x] 1. Scaffold Test Project & Dependencies
+  - [x] Create `Social.Tests/Social.Tests.csproj` with xUnit, FluentAssertions, NSubstitute, Mvc.Testing
+  - [x] Add `Social.Tests` to `Social.sln`
+  - [x] Verify test project builds and runs a sanity test
+- [x] 2. Implement Unit Tests for Application CQRS Handlers
+  - [x] Users handlers (CreateUser, SignIn, RefreshToken, ChangePassword, ForgetPassword, ResetPassword, Logout, GetUserById, SearchUsers)
+  - [x] Posts handlers (AddPost, SharePost, UpdatePost, DeletePost, GetFeedPosts, GetMyPosts, GetPostById, GetPostsByUserId)
+  - [x] Comments handlers (AddComment, AddReplyComment, UpdateComment, DeleteComment, GetCommentsByPostId, GetCommentById)
+  - [x] Follow handlers (FollowUser, UnfollowUser, AcceptFollow, RejectFollow, GetFollowers, GetFollowing, GetPendingFollowRequest)
+  - [x] Like handlers (AddOrRemoveLike, GetLikesByPostId)
+  - [x] BlockUser handlers (BlockUser, UnblockUser, GetBlockedUsers, IsUserBlocked)
+  - [x] Notifications handlers (CreateNotification, MarkNotificationAsRead, MarkAllNotificationsAsRead, DeleteNotification, DeleteAllNotificationsForUser)
+- [x] 3. Implement Integration Tests for API Controllers / Endpoints
+  - [x] Create `CustomWebApplicationFactory` with in-memory test doubles and claims-based auth test handler
+  - [x] UserController integration tests
+  - [x] PostsController integration tests
+  - [x] CommentsController integration tests
+  - [x] FollowController integration tests
+  - [x] LikeController integration tests
+  - [x] BlockUserController integration tests
+  - [x] NotificationsController integration tests
+  - [x] GlobalExceptionMiddleware integration tests
+- [x] 4. Codebase Improvements
+  - [x] Add MediatR Validation Pipeline Behavior with FluentValidation
+  - [x] Add `CancellationToken` across repository contracts
+- [x] 5. Verification & Closure
+  - [x] Run full test suite with `dotnet test` (74 passed, 0 failed)
+  - [x] Create verification and walkthrough artifacts

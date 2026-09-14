@@ -1,0 +1,34 @@
+# Tasks: Clean Architecture Refactor
+
+- [x] 1. Fix Solution Build & Project References (Phase 1)
+  - [x] Remove phantom `Social.Tests` from `Social.sln`
+  - [x] Purify `Social.Core.csproj` (remove `Microsoft.AspNetCore.App` and replace EF Identity with `Microsoft.Extensions.Identity.Stores`)
+  - [x] Remove `Social.Infrastructure` reference from `Social.Application.csproj`
+  - [x] Add `Social.Infrastructure` reference to `Social/Social.API.csproj`
+  - [x] Remove unused `using Social.Infrastructure.Token;` in `RefreshTokenCommand.cs`
+- [x] 2. Remove Duplicate and Dead Files (Phase 2)
+  - [x] Delete `Social.Core/Entities/GenralConfig.cs`
+  - [x] Delete `Social.Application/Features/BlockUser/Commends/` folder
+  - [x] Delete `Social.Infrastructure/Token/ITokenService.cs` (empty file)
+  - [x] Delete `Social/Services/Caching/ICacheService.cs` (duplicate)
+  - [x] Delete root `api_test_errors.txt`
+- [x] 3. Relocate Misplaced Types & Caching (Phase 3)
+  - [x] Move `RedisCacheService.cs` and `InMemoryCacheService.cs` to `Social.Infrastructure/Caching/`
+  - [x] Relocate `SignIn.cs` to `Social.Application` as `SignInRequest` (or alias for backward compat)
+  - [x] Move options/settings (`EmailSettings.cs`, `GeneralConfig.cs`) to `Social.Core/Configuration/`
+  - [x] Extract `Actions` out of `MediaTypes.cs` into `NotificationActionTypes.cs`
+- [x] 4. Code Quality & Consistency Improvements (Phase 4)
+  - [x] Add namespace to `RefreshToken.cs`
+  - [x] Make `VisibilityValues` immutable consts
+  - [x] Make `UserGenderTypes` a static class
+  - [x] Move `GetUserId()` into `BaseController` and remove duplicate methods
+  - [x] Fix `Social.Api.Controllers` namespace in `PostsController.cs`
+  - [x] Standardize DI methods to use `IServiceCollection`
+- [x] 5. Global Exception Handling Middleware (Phase 5)
+  - [x] Create `Social.API.Middlewares.GlobalExceptionMiddleware`
+  - [x] Register in `Program.cs`
+- [x] 6. Final Build Verification & Walkthrough (Phase 6)
+  - [x] Run `dotnet build Social.sln`
+  - [x] Validate project reference graph
+  - [x] Clean up root publish profile duplicate
+  - [x] Update session log and create walkthrough artifact
