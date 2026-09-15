@@ -790,4 +790,79 @@ Migration `AddNotificationIntelligence` is additive-only but NOT applied to prod
 - Blockers: None
 ---
 
+## Session: 2026-09-16 (sdk-generation-pipeline)
+### What was done
+- Built contract-driven Enterprise SDK pipeline (pnpm-only): .NET build-time OpenAPI + Orval web SDK + dart-dio mobile SDK + `pnpm run generate:all`.
+- .NET: `Social.API.csproj` (`OpenApiGenerateDocuments`, `ApiDescription.Server 9.0.4`); `MapOpenApi()` unconditional; transformer strips `OpenApiNull` defaults (7 null-defaults removed, fixes Orval zod `.default(null)`).
+- Web: `orval.config.ts` (react-query + zod tags-split; dropped removed `input.validation` key), `src/api/custom-instance.ts` (AbortController-native, no CancelToken), strict `tsconfig.json`. 75 files, `tsc --noEmit` 0 errors.
+- Mobile: wrapper `2.41.0` = generator 7.25.0 (npm `^7.22.0` does not exist); `scripts/generate-mobile.mjs` (pubspec `^3.8.0` patch, factory restore from `sdk-assets/`, pub get, build_runner 84 outputs); `flutter analyze` 0 errors (11 upstream unused-import warnings accepted).
+- Verified: from-zero `generate:all` exit 0; hook+zod import probe compiled; temp Dio-adapter test 2/2 (Bearer inject/omit); `dotnet build` 0 errors; `dotnet test` 242/242.
+- Generated trees + `openapi.json` gitignored (generate-at-build-time); ADR-012 written.
+
+### Decisions made
+- ADR-012: source-fix null-defaults; npm wrapper version mapping; AbortController mutator; pubspec patch + asset-restore script; warnings policy.
+
+### Files changed
+- `Social/Social.API.csproj`, `Social/Program.cs`, `.gitignore`
+- `package.json`, `pnpm-lock.yaml`, `orval.config.ts`, `tsconfig.json`, `src/api/custom-instance.ts`, `scripts/export-openapi.mjs`, `scripts/generate-mobile.mjs`, `sdk-assets/flutter/api_client_factory.dart`
+- `plans/sdk-generation-pipeline/*`, `plans/DECISIONS.md` (ADR-012), `plans/TECH_STACK.md`, `plans/ARCH.md`, `plans/PATTERNS.md`, `plans/context.md`
+
+### State at end of session
+- Active feature: none (sdk-generation-pipeline completed)
+- Next: `pnpm run generate:all` on every spec change (pre-commit/CI); follow-ups: operationIds, Scalar UI, CI wiring
+- Blockers: None
+---
+
+### Resume instructions
+Run `pnpm run generate:all` to reproduce both SDKs. Web: `pnpm run typecheck`. Mobile: `flutter analyze` inside `packages/social_api_client`. .NET: `dotnet test Social.sln -c Release` (242/242). Pending prod work (out of scope): 2 EF migrations need human approval + binary deploy.
+---
+
+## Session: 2026-09-16 (sdk-isolation)
+### What was done
+- Relocated full SDK pipeline root → `sdks/` (`generator/` engine, `web/` TS output, `mobile/social_api_client/` Dart package). Root audit programmatically CLEAN (no package.json/lock/node_modules/orval/tsconfig/specs/scripts/sdk-assets/packages/SDK-src).
+- Rewrote paths for new depth: orval input `../../Social/Social.API.json` via `import.meta.dirname` (brief's `__dirname` would crash in ESM; repo reality is `Social/`, not `src/Social.API/`); outputs `../web/...`; mutator `./custom-instance.ts`; mobile `-i/-o` + asset paths in `generate-mobile.mjs`; package renamed `@social/sdk-generator`; dropped `openapi:export` (direct-artifact inputs).
+- Fixed post-move `tsc` TS2307 via tsconfig `paths` map for the two observed bare imports (`zod`, `@tanstack/react-query`) to generator-local `node_modules`.
+- Rewrote root `.gitignore` SDK block for `sdks/...` + real `lib/src/...` layout.
+- Incident: transient OS lock failed `Move-Item packages/` then chained `Remove-Item` deleted it; recovered via from-zero regeneration (no hand-written loss; lesson → PATTERNS.md verify-before-delete).
+- Verified: `pnpm install` + `generate:all` from `sdks/generator` exit 0 (84 Dart outputs, factory restored); `typecheck` 0 errors; `flutter analyze` 0 errors (11 upstream warnings); `dotnet build` 0 errors; `dotnet test` 242/242.
+
+### Decisions made
+- ADR-013: `sdks/` isolation; direct-artifact inputs; `import.meta.dirname`; keep orchestrator script; tsconfig `paths` over workspace/junction alternatives.
+
+### Files changed
+- Moved: engine → `sdks/generator/` (package.json, pnpm-lock.yaml, orval.config.ts, tsconfig.json, custom-instance.ts, scripts/generate-mobile.mjs, sdk-assets/); Dart package → `sdks/mobile/social_api_client/`; web output → `sdks/web/`
+- Deleted: root `node_modules/`, `src/`, `scripts/`, `sdk-assets/`, `packages/`, `openapi.json`, `openapitools.json`, `package.json`, `pnpm-lock.yaml`, `orval.config.ts`, `tsconfig.json`, `scripts/export-openapi.mjs`
+- Modified: `.gitignore`, `plans/sdk-isolation/*`, `plans/DECISIONS.md` (ADR-013), `plans/ARCH.md`, `plans/TECH_STACK.md`, `plans/PATTERNS.md`, `plans/context.md`
+
+### State at end of session
+- Active feature: none (sdk-isolation completed)
+- Next: `dotnet build` must precede `generate:all` (emits input artifact); run pipeline from `sdks/generator` on every spec change
+- Blockers: None
+---
+
+### Resume instructions
+Pipeline home is `sdks/generator` (`pnpm install`, `pnpm run generate:all`, `pnpm run typecheck`). Mobile analyze inside `sdks/mobile/social_api_client`. .NET: `dotnet test Social.sln -c Release` (242/242). Pending prod work (out of scope): 2 EF migrations need human approval + binary deploy.
+---
+
+## Session: 2026-09-16 (enterprise-docs)
+### What was done
+- Produced enterprise docs from 4 parallel evidence scans (backend invariants, 77-op OpenAPI inventory, web SDK, mobile SDK + tooling).
+- New: `docs/ARCHITECTURE.md` (invariants + line refs), `docs/API_REFERENCE.md` (all 77 ops/70 paths/11 tags, envelope + error matrix verified vs ApiResponse.cs/middleware), `docs/SDK_WEB.md`, `docs/SDK_MOBILE.md` (recipes with real symbols), `docs/TOOLING_AND_PIPELINE.md` (isolation, order, CLI, CI example).
+- Rewrote root `README.md` as portal; marked legacy lowercase docs superseded.
+- Spot-check corrections: Orval body-writes are useQuery-style / param-GETs are useMutation `{params}` (recipes fixed); all web responses typed `void` (envelope-cast documented); Dart signatures + CreatePostRequest ctor verified; 409 marked not-emitted (no Conflict path in codebase).
+- Verified: Test-Path green for all docs + every referenced source path; section counts sum to 77; docs-only (no code, no tests affected).
+
+### Decisions made
+- No ADR needed (docs-only, no architecture change). Honesty over completeness: CI workflow as example snippet, upload recipe at MultipartFile level, no invented fields.
+
+### Files changed
+- `docs/ARCHITECTURE.md`, `docs/API_REFERENCE.md`, `docs/SDK_WEB.md`, `docs/SDK_MOBILE.md`, `docs/TOOLING_AND_PIPELINE.md` (new)
+- `README.md` (rewritten), `plans/enterprise-docs/*`, `plans/context.md`
+
+### State at end of session
+- Active feature: none (enterprise-docs completed)
+- Next: regenerate docs on endpoint/invariant/generator changes; deferred: operationIds, Scalar UI, CI wiring
+- Blockers: None
+---
+
 

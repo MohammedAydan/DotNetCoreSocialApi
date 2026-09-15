@@ -4,9 +4,9 @@
 A backend RESTful API for a social media platform built with ASP.NET Core 9 and Clean Architecture, featuring user authentication (JWT & Refresh tokens), user profile management, posts, media, comments, likes, follower relationships, user blocking, notifications, distributed Redis caching, and rate limiting.
 
 ## Current Status
-- Active feature: enterprise-analytics
+- Active feature: none (enterprise-docs completed; docs/ portal + README live)
 - Overall health: green
-- Last updated: 2026-09-16 (enterprise-analytics implemented, 242/242 tests passing)
+- Last updated: 2026-09-16 (enterprise-docs: 5 docs + README, 242/242 tests unaffected, docs-only change)
 
 ## Critical Constraints
 - Framework: .NET 9 / C# 13
