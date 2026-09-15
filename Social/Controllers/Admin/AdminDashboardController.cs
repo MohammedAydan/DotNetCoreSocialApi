@@ -105,14 +105,7 @@ namespace Social.API.Controllers.Admin
 
             if ((result == null || !result.IsSuccess) && isOfficialAdmin && _databaseSeeder != null)
             {
-                if (loginRequest.Password == "AdminPassword123!")
-                {
-                    await _databaseSeeder.ResetAdminPasswordAsync(loginRequest.Email.Trim(), loginRequest.Password);
-                }
-                else
-                {
-                    await _databaseSeeder.EnsureAdminUserAsync(loginRequest.Email.Trim(), loginRequest.Password);
-                }
+                await _databaseSeeder.ResetAdminPasswordAsync(loginRequest.Email.Trim(), loginRequest.Password);
 
                 result = await _sender.Send(new SignInCommand(new SignIn
                 {

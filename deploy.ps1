@@ -40,7 +40,7 @@ $ProjectFile = '.\Social\Social.API.csproj'
 $PublishDir = Join-Path ([System.IO.Path]::GetTempPath()) ('SocialApi-Publish-' + [System.Guid]::NewGuid().ToString('N'))
 
 # FTP root must be the IIS application's FTP directory.
-$FtpBaseUri = 'ftp://site26082.siteasp.net/'
+$FtpBaseUri = 'ftp://site26082.siteasp.net/wwwroot/'
 
 # Optional FTPS.
 $UseFtps = $false
