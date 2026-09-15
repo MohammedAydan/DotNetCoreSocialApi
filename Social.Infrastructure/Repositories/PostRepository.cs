@@ -31,7 +31,7 @@ namespace Social.Infrastructure.Repositories
             return post;
         }
 
-        public async Task<Post> SharePostAsync(string postId, Post post, CancellationToken cancellationToken = default) 
+        public async Task<Post> SharePostAsync(string postId, Post post, CancellationToken cancellationToken = default)
         {
             post.Id = Guid.NewGuid().ToString();
             post.CreatedAt = DateTime.UtcNow;
@@ -52,7 +52,8 @@ namespace Social.Infrastructure.Repositories
                 .ThenInclude(p => p!.User)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (originalPost != null) {
+            if (originalPost != null)
+            {
                 post.ParentPost = originalPost;
                 originalPost.ShareingsCount = originalPost.ShareingsCount + 1;
                 _context.Posts.Update(originalPost);
@@ -83,8 +84,79 @@ namespace Social.Infrastructure.Repositories
         }
 
 
-        public async Task<IEnumerable<Post>> GetFeedPostsAsync(string userId, int page = 1, int limit = 20, CancellationToken cancellationToken = default)
+        // public async Task<IEnumerable<Post>> GetFeedPostsAsync(string userId, int page = 1, int limit = 20, CancellationToken cancellationToken = default)
+        // {
+        //     if (string.IsNullOrWhiteSpace(userId))
+        //         throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+
+        //     if (page < 1)
+        //         throw new ArgumentOutOfRangeException(nameof(page), "Page number must be greater than 0.");
+
+        //     if (limit < 1)
+        //         throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be greater than 0.");
+
+        //     // Use a more efficient SQL query with joins instead of multiple queries
+        //     // This executes a single optimized query that the database can better handle
+        //     var query = from p in _context.Posts
+        //                 join u in _context.Users on p.UserId equals u.Id
+        //                 join f in _context.Followers on new { FollowerId = userId, FollowingId = p.UserId } equals new { f.FollowerId, f.FollowingId } into followings
+        //                 from f in followings.DefaultIfEmpty()
+        //                 where
+        //                     // Include posts from users the current user follows and the user's own posts
+        //                     ((f != null && f.Accepted) || p.UserId == userId) &&
+        //                     // Only include posts that are public or from the user themselves
+        //                     (p.UserId == userId || (!u.IsPrivate && p.Visibility.ToLower() == VisibilityValues.Public))
+        //                 orderby p.CreatedAt descending
+        //                 select p;
+
+        //     // Apply pagination
+        //     var posts = await query
+        //         .AsNoTracking()
+        //         .Skip((page - 1) * limit)
+        //         .Take(limit)
+        //         .Include(p => p.User)
+        //         .Include(p => p.Media)
+        //         .Include(p => p.ParentPost)
+        //         .ThenInclude(p => p!.ParentPost)
+        //         .ThenInclude(p => p!.ParentPost)
+        //         .ThenInclude(p => p!.User)
+        //         .ToListAsync(cancellationToken);
+
+        //     // If posts list is empty, return it immediately
+        //     if (!posts.Any())
+        //         return posts;
+
+        //     // Get post IDs for the efficient likes query
+        //     var postIds = posts.Select(p => p.Id).ToList();
+
+        //     // Get likes for just these specific posts (instead of all likes)
+        //     var likedPostIds = await _context.Likes
+        //         .AsNoTracking()
+        //         .Where(l => l.UserId == userId && postIds.Contains(l.PostId))
+        //         .Select(l => l.PostId)
+        //         .ToListAsync(cancellationToken);
+
+        //     // Create a HashSet for O(1) lookups
+        //     var likedPostsSet = new HashSet<string>(likedPostIds);
+
+        //     // Set IsLiked property efficiently
+        //     foreach (var post in posts)
+        //     {
+        //         post.IsLiked = likedPostsSet.Contains(post.Id);
+        //     }
+
+        //     return posts;
+        // }
+
+        private const int MaxPageLimit = 50; // حد أقصى ضد الطلبات الخبيثة/الضخمة
+
+        public async Task<IEnumerable<Post>> GetFeedPostsAsync(
+            string userId,
+            int page = 1,
+            int limit = 20,
+            CancellationToken cancellationToken = default)
         {
+            // ---------- 1) التحقق من المدخلات ----------
             if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
 
@@ -94,55 +166,62 @@ namespace Social.Infrastructure.Repositories
             if (limit < 1)
                 throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be greater than 0.");
 
-            // Use a more efficient SQL query with joins instead of multiple queries
-            // This executes a single optimized query that the database can better handle
-            var query = from p in _context.Posts
-                        join u in _context.Users on p.UserId equals u.Id
-                        join f in _context.Followers on new { FollowerId = userId, FollowingId = p.UserId } equals new { f.FollowerId, f.FollowingId } into followings
-                        from f in followings.DefaultIfEmpty()
-                        where
-                            // Include posts from users the current user follows and the user's own posts
-                            ((f != null && f.Accepted) || p.UserId == userId) &&
-                            // Only include posts that are public or from the user themselves
-                            (p.UserId == userId || (!u.IsPrivate && p.Visibility.ToLower() == VisibilityValues.Public))
-                        orderby p.CreatedAt descending
-                        select p;
+            limit = Math.Min(limit, MaxPageLimit);
 
-            // Apply pagination
+            // ---------- 2) بناء الاستعلام ----------
+            // سياسة الـ Feed (صحّحت الخلط المنطقي في النسخة القديمة):
+            //   أ) بوستات المستخدم نفسه — دائمًا.
+            //   ب) بوستات من يتابعهم المستخدم (Follow مقبول) — بكل مستويات الظهور الخاصة بهم.
+            //   ج) بوستات عامة من حسابات غير خاصة لم يتابعها (اكتشاف).
+            // ملاحظة: إن لم ترد "الاكتشاف"، احذف الشرط الثالث — الـ EXISTS وحده يكفي.
+            var query =
+                from p in _context.Posts
+                join u in _context.Users on p.UserId equals u.Id
+                where p.UserId == userId
+                      || _context.Followers.Any(f =>
+                             f.FollowerId == userId
+                             && f.FollowingId == p.UserId
+                             && f.Accepted)
+                      || (!u.IsPrivate && p.Visibility == VisibilityValues.Public)
+                orderby p.CreatedAt descending, p.Id descending // ✅ ترتيب حتمي: لا تكرار/ضياع بين الصفحات
+                select p;
+
+            // ---------- 3) التنفيذ والترقيم ----------
             var posts = await query
-                .AsNoTracking()
                 .Skip((page - 1) * limit)
                 .Take(limit)
+                // كل مستوى من الـ ParentPost يحتاج Include معاد التثبيت لتحميل .User عنده
                 .Include(p => p.User)
                 .Include(p => p.Media)
                 .Include(p => p.ParentPost)
-                .ThenInclude(p => p!.ParentPost)
-                .ThenInclude(p => p!.ParentPost)
-                .ThenInclude(p => p!.User)
+                    .ThenInclude(p => p!.User)
+                .Include(p => p.ParentPost)
+                    .ThenInclude(p => p!.ParentPost)
+                        .ThenInclude(p => p!.User)
+                .Include(p => p.ParentPost)
+                    .ThenInclude(p => p!.ParentPost)
+                        .ThenInclude(p => p!.ParentPost)
+                            .ThenInclude(p => p!.User)
+                .AsSplitQuery()   // ✅ يمنع تضخم النتائج (Media × Parents)
+                .AsNoTracking()   // ✅ قراءة فقط — بدون تتبّع
                 .ToListAsync(cancellationToken);
 
-            // If posts list is empty, return it immediately
-            if (!posts.Any())
+            if (posts.Count == 0)
                 return posts;
 
-            // Get post IDs for the efficient likes query
             var postIds = posts.Select(p => p.Id).ToList();
 
-            // Get likes for just these specific posts (instead of all likes)
-            var likedPostIds = await _context.Likes
-                .AsNoTracking()
-                .Where(l => l.UserId == userId && postIds.Contains(l.PostId))
-                .Select(l => l.PostId)
-                .ToListAsync(cancellationToken);
+            // ---------- 4) الـ Likes — استعلام واحد + HashSet ----------
+            // ToListAsync ثم ToHashSet: متوافق مع كل إصدارات EF Core (ToHashSetAsync يتطلب EF Core 8+)
+            var likedPostsSet = (await _context.Likes
+                    .AsNoTracking()
+                    .Where(l => l.UserId == userId && postIds.Contains(l.PostId))
+                    .Select(l => l.PostId)
+                    .ToListAsync(cancellationToken))
+                .ToHashSet();
 
-            // Create a HashSet for O(1) lookups
-            var likedPostsSet = new HashSet<string>(likedPostIds);
-
-            // Set IsLiked property efficiently
             foreach (var post in posts)
-            {
                 post.IsLiked = likedPostsSet.Contains(post.Id);
-            }
 
             return posts;
         }
