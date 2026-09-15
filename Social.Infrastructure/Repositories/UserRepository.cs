@@ -143,8 +143,12 @@ namespace Social.Infrastructure.Repositories
             if (user.IsPrivate != existingUser.IsPrivate)
                 existingUser.IsPrivate = user.IsPrivate;
 
-            if (user.IsVerified != existingUser.IsVerified)
-                existingUser.IsVerified = user.IsVerified;
+            // NOTE: IsVerified is intentionally NOT updated here.
+            // Verification is an admin-only flag managed via
+            // AdminRepository.ToggleUserVerificationAsync. Copying it from the
+            // UpdateUserDto-mapped entity (which has no IsVerified field and
+            // therefore defaults to false) would clear verification on every
+            // profile update.
 
             var result = await _userManager.UpdateAsync(existingUser);
             if (!result.Succeeded)

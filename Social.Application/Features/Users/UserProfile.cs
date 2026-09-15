@@ -25,7 +25,9 @@ namespace Social.Application.Features.Users
                 .ForMember(dest => dest.Followers, opt => opt.Ignore())
                 .ForMember(dest => dest.Following, opt => opt.Ignore()).ReverseMap();
 
-            CreateMap<UpdateUserDto, User>().ReverseMap();
+            CreateMap<UpdateUserDto, User>()
+                .ForMember(dest => dest.IsVerified, opt => opt.Ignore())
+                .ReverseMap();
             CreateMap<PostUserDto, User>().ReverseMap();
             CreateMap<CommentUserDto, User>().ReverseMap();
             CreateMap<CommetUserDto, User>().ReverseMap();
