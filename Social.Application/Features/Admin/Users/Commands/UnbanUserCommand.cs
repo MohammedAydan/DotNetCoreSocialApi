@@ -36,8 +36,7 @@ namespace Social.Application.Features.Admin.Users.Commands
                 throw new KeyNotFoundException($"User with ID '{request.TargetUserId}' was not found.");
             }
 
-            if (string.Equals(request.TargetUserId, "active-user-001", StringComparison.OrdinalIgnoreCase) ||
-                (!user.LockoutEnabled && user.LockoutEnd == null))
+            if (!user.LockoutEnd.HasValue || user.LockoutEnd.Value <= DateTimeOffset.UtcNow)
             {
                 throw new InvalidOperationException("User is not currently banned or locked out.");
             }

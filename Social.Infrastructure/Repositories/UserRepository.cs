@@ -74,6 +74,15 @@ namespace Social.Infrastructure.Repositories
             if (user == null)
                 throw new InvalidOperationException("User not found.");
 
+            if (!string.IsNullOrWhiteSpace(myUserId) && !string.Equals(myUserId, userId, StringComparison.OrdinalIgnoreCase))
+            {
+                var isBlocked = await _context.BlockUsers.AsNoTracking().AnyAsync(b =>
+                    (b.UserId == myUserId && b.BlockedUserId == userId) ||
+                    (b.UserId == userId && b.BlockedUserId == myUserId), cancellationToken);
+                if (isBlocked)
+                    throw new UnauthorizedAccessException("You are not authorized to view this user.");
+            }
+
             if (myUserId != null && myUserId != userId)
             {
                 var follower = await _context.Followers
@@ -221,6 +230,20 @@ namespace Social.Infrastructure.Repositories
                     (u.LastName != null && u.LastName.ToUpper().IndexOf(normalizedQuery, StringComparison.OrdinalIgnoreCase) >= 0) ||
                     (u.Bio != null && u.Bio.ToUpper().IndexOf(normalizedQuery, StringComparison.OrdinalIgnoreCase) >= 0)
                 ).ToList();
+
+                // Exclude users with a block in either direction.
+                if (!string.IsNullOrEmpty(currentUserId))
+                {
+                    var blockedIds = await _context.BlockUsers.AsNoTracking()
+                        .Where(b => b.UserId == currentUserId || b.BlockedUserId == currentUserId)
+                        .Select(b => b.UserId == currentUserId ? b.BlockedUserId : b.UserId)
+                        .ToListAsync(cancellationToken).ConfigureAwait(false);
+                    if (blockedIds.Count != 0)
+                    {
+                        var blockedSet = new HashSet<string>(blockedIds, StringComparer.OrdinalIgnoreCase);
+                        filteredUsers = filteredUsers.Where(u => u.Id == null || !blockedSet.Contains(u.Id)).ToList();
+                    }
+                }
 
                 // Total count of filtered users
                 var totalCount = filteredUsers.Count;

@@ -49,6 +49,12 @@ namespace Social.Application.Features.Users.Commands
                     return AuthResponse.Create(message: "User not found", errors: errors);
                 }
 
+                if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow)
+                {
+                    errors.Add("User account has been banned");
+                    return AuthResponse.Create(message: "User account has been banned", errors: errors);
+                }
+
                 var roles = (await _userRepository.GetUserRolesAsync(user))?.ToList() ?? new List<string>();
 
                 var accessToken = _tokenService.GenerateToken(user, roles);

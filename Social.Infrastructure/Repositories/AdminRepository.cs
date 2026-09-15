@@ -91,6 +91,7 @@ namespace Social.Infrastructure.Repositories
             if (user == null) return false;
 
             user.LockoutEnd = null;
+            user.LockoutEnabled = false;
             var result = await _userManager.UpdateAsync(user);
             return result.Succeeded;
         }

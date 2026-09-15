@@ -20,6 +20,17 @@ namespace Social.Infrastructure.Repositories
 
         public async Task AddAsync(Notification notification, CancellationToken cancellationToken = default)
         {
+            // Central block gate: never deliver notifications across a block.
+            if (!string.IsNullOrWhiteSpace(notification.UserId) &&
+                !string.IsNullOrWhiteSpace(notification.RecipientId))
+            {
+                var isBlocked = await _context.BlockUsers.AsNoTracking().AnyAsync(b =>
+                    (b.UserId == notification.UserId && b.BlockedUserId == notification.RecipientId) ||
+                    (b.UserId == notification.RecipientId && b.BlockedUserId == notification.UserId), cancellationToken);
+                if (isBlocked)
+                    return;
+            }
+
             await _context.Notifications.AddAsync(notification, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }

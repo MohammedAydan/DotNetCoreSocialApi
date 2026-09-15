@@ -232,6 +232,7 @@ namespace Social.Tests.Infrastructure
             if (_users.TryGetValue(userId, out var user))
             {
                 user.LockoutEnd = null;
+                user.LockoutEnabled = false;
                 return Task.FromResult(true);
             }
             return Task.FromResult(false);

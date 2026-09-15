@@ -32,6 +32,18 @@ namespace Social.Infrastructure.Repositories
             comment.Id = Guid.NewGuid().ToString();
             comment.CreatedAt = DateTime.UtcNow;
 
+            // Block gate: commenter <-> post author (either direction).
+            var postForBlockCheck = await _dbContext.Posts.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == comment.PostId, cancellationToken);
+            if (postForBlockCheck != null)
+            {
+                var isBlocked = await _dbContext.BlockUsers.AsNoTracking().AnyAsync(b =>
+                    (b.UserId == comment.UserId && b.BlockedUserId == postForBlockCheck.UserId) ||
+                    (b.UserId == postForBlockCheck.UserId && b.BlockedUserId == comment.UserId), cancellationToken);
+                if (isBlocked)
+                    throw new InvalidOperationException("Action not allowed between blocked users.");
+            }
+
             _dbContext.Comments.Add(comment);
 
             // Increment Post.CommentsCount
@@ -62,6 +74,29 @@ namespace Social.Infrastructure.Repositories
 
             reply.Id = Guid.NewGuid().ToString();
             reply.CreatedAt = DateTime.UtcNow;
+
+            // Block gate: replier <-> parent author and replier <-> post author.
+            var parentForBlockCheck = await _dbContext.Comments.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == reply.ParentId, cancellationToken);
+            if (parentForBlockCheck != null)
+            {
+                var isBlockedByParent = await _dbContext.BlockUsers.AsNoTracking().AnyAsync(b =>
+                    (b.UserId == reply.UserId && b.BlockedUserId == parentForBlockCheck.UserId) ||
+                    (b.UserId == parentForBlockCheck.UserId && b.BlockedUserId == reply.UserId), cancellationToken);
+                if (isBlockedByParent)
+                    throw new InvalidOperationException("Action not allowed between blocked users.");
+            }
+
+            var postForReplyBlockCheck = await _dbContext.Posts.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == reply.PostId, cancellationToken);
+            if (postForReplyBlockCheck != null)
+            {
+                var isBlockedByAuthor = await _dbContext.BlockUsers.AsNoTracking().AnyAsync(b =>
+                    (b.UserId == reply.UserId && b.BlockedUserId == postForReplyBlockCheck.UserId) ||
+                    (b.UserId == postForReplyBlockCheck.UserId && b.BlockedUserId == reply.UserId), cancellationToken);
+                if (isBlockedByAuthor)
+                    throw new InvalidOperationException("Action not allowed between blocked users.");
+            }
 
             _dbContext.Comments.Add(reply);
 
@@ -200,6 +235,13 @@ namespace Social.Infrastructure.Repositories
 
         private async Task CreateCommentNotificationAsync(Comment comment, string recipientId, string notificationType, CancellationToken cancellationToken = default)
         {
+            // Never notify across a block in either direction.
+            var isBlocked = await _dbContext.BlockUsers.AsNoTracking().AnyAsync(b =>
+                (b.UserId == comment.UserId && b.BlockedUserId == recipientId) ||
+                (b.UserId == recipientId && b.BlockedUserId == comment.UserId), cancellationToken);
+            if (isBlocked)
+                return;
+
             string message;
 
             switch (notificationType)

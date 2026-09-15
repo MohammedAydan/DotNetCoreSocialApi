@@ -15,6 +15,9 @@ namespace Social.Application.Features.Admin.Users.Validators
 
             RuleFor(x => x.Reason)
                 .NotEmpty().WithMessage("Reason for ban must be provided.");
+
+            RuleFor(x => x.DurationDays)
+                .Must(d => !d.HasValue || d.Value > 0).WithMessage("Ban duration must be greater than zero days.");
         }
     }
 }

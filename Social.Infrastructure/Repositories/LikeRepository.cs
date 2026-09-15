@@ -27,6 +27,15 @@ namespace Social.Infrastructure.Repositories
 
             var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId, cancellationToken);
             if (post == null) return false;
+
+            if (existingLike == null)
+            {
+                var isBlocked = await _context.BlockUsers.AsNoTracking().AnyAsync(b =>
+                    (b.UserId == userId && b.BlockedUserId == post.UserId) ||
+                    (b.UserId == post.UserId && b.BlockedUserId == userId), cancellationToken);
+                if (isBlocked)
+                    throw new InvalidOperationException("Action not allowed between blocked users.");
+            }
             
             if (existingLike != null)
             {

@@ -36,6 +36,12 @@ namespace Social.Infrastructure.Repositories
             if (targetUser == null)
                 throw new InvalidOperationException("Target user not found.");
 
+            var isBlocked = await _context.BlockUsers.AsNoTracking().AnyAsync(b =>
+                (b.UserId == followerId && b.BlockedUserId == targetUserId) ||
+                (b.UserId == targetUserId && b.BlockedUserId == followerId), cancellationToken);
+            if (isBlocked)
+                throw new InvalidOperationException("Action not allowed between blocked users.");
+
             var existing = await _context.Followers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FollowingId == targetUserId, cancellationToken);
@@ -148,6 +154,12 @@ namespace Social.Infrastructure.Repositories
             if (follow == null)
                 throw new InvalidOperationException("No pending follow request found.");
 
+            var isBlocked = await _context.BlockUsers.AsNoTracking().AnyAsync(b =>
+                (b.UserId == targetUserId && b.BlockedUserId == followerId) ||
+                (b.UserId == followerId && b.BlockedUserId == targetUserId), cancellationToken);
+            if (isBlocked)
+                throw new InvalidOperationException("Action not allowed between blocked users.");
+
             follow.Accepted = true;
             follow.UpdatedAt = DateTime.UtcNow;
 
@@ -225,6 +237,9 @@ namespace Social.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(f => f.FollowerUser) // People who follow me (my followers)
                 .Where(f => f.FollowingId == userId && f.Accepted)
+                .Where(f => !_context.BlockUsers.Any(b =>
+                    (b.UserId == userId && b.BlockedUserId == f.FollowerId) ||
+                    (b.UserId == f.FollowerId && b.BlockedUserId == userId)))
                 .OrderByDescending(f => f.CreatedAt)
                 .Skip((page - 1) * limit)
                 .Take(limit)
@@ -246,6 +261,9 @@ namespace Social.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(f => f.FollowingUser) // People I follow (my following)
                 .Where(f => f.FollowerId == userId && f.Accepted)
+                .Where(f => !_context.BlockUsers.Any(b =>
+                    (b.UserId == userId && b.BlockedUserId == f.FollowingId) ||
+                    (b.UserId == f.FollowingId && b.BlockedUserId == userId)))
                 .OrderByDescending(f => f.CreatedAt)
                 .Skip((page - 1) * limit)
                 .Take(limit)
@@ -267,6 +285,9 @@ namespace Social.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(f => f.FollowerUser) // People who want to follow me (pending requests)
                 .Where(f => f.FollowingId == userId && !f.Accepted)
+                .Where(f => !_context.BlockUsers.Any(b =>
+                    (b.UserId == userId && b.BlockedUserId == f.FollowerId) ||
+                    (b.UserId == f.FollowerId && b.BlockedUserId == userId)))
                 .OrderByDescending(f => f.CreatedAt)
                 .Skip((page - 1) * limit)
                 .Take(limit)
@@ -275,6 +296,13 @@ namespace Social.Infrastructure.Repositories
 
         private async Task CreateFollowNotificationAsync(string followerId, string targetUserId, string followId, string notificationType)
         {
+            // Never notify across a block in either direction.
+            var isBlocked = await _context.BlockUsers.AsNoTracking().AnyAsync(b =>
+                (b.UserId == followerId && b.BlockedUserId == targetUserId) ||
+                (b.UserId == targetUserId && b.BlockedUserId == followerId));
+            if (isBlocked)
+                return;
+
             string message;
             string recipientId;
 
