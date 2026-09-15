@@ -6,7 +6,7 @@ A backend RESTful API for a social media platform built with ASP.NET Core 9 and 
 ## Current Status
 - Active feature: none
 - Overall health: green
-- Last updated: 2026-09-15
+- Last updated: 2026-09-16 (notifications-intel completed, 214/214 tests passing)
 
 ## Critical Constraints
 - Framework: .NET 9 / C# 13

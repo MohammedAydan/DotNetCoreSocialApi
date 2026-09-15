@@ -40,6 +40,18 @@ namespace Social.Core.Entities
         // Read status
         public bool IsRead { get; set; } = false;
 
+        // Quiet-hours deferral: stored immediately but hidden from inbox/badge until released.
+        public bool IsDeferred { get; set; } = false;
+
+        // Aggregation (write-time collapse of repeat events, e.g. likes on the same post).
+        // All rows in a group share the same GroupKey; the surviving row counts actors.
+        public string? GroupKey { get; set; }
+        public int ActorCount { get; set; } = 1;
+        public string? LastActorName { get; set; }
+
+        // Smart-inbox ordering. Set at write time from NotificationPriority.For(type).
+        public int Priority { get; set; } = 0;
+
         // Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

@@ -9,6 +9,7 @@ namespace Social.Application.Features.Notifications.DTOs
     public class CreateNotificationDto
     {
         public string UserId { get; set; }
+        public string RecipientId { get; set; } = string.Empty;
         public string Type { get; set; }
         public string Message { get; set; }
         public string? PostId { get; set; }
@@ -16,5 +17,6 @@ namespace Social.Application.Features.Notifications.DTOs
         public string? FollowerId { get; set; }
         public string? LikeId { get; set; }
         public string? ImageUrl { get; set; }
+        public string? LastActorName { get; set; }
     }
 }

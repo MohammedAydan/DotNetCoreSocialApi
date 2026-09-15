@@ -15,6 +15,7 @@ namespace Social.Infrastructure.Data
         public DbSet<Comment> Comments { get; set; }
         public DbSet<Media> Media { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<NotificationPreference> NotificationPreferences { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<BlockUser> BlockUsers { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
@@ -283,9 +284,43 @@ namespace Social.Infrastructure.Data
                 })
                 .IsDescending(false, false, true);
 
+                // Smart inbox: recipient + visibility + priority + recency.
+                entity.Property(n => n.GroupKey).HasMaxLength(300);
+                entity.Property(n => n.LastActorName).HasMaxLength(120);
+                entity.HasIndex(n => new
+                {
+                    n.RecipientId,
+                    n.IsRead,
+                    n.Priority,
+                    n.CreatedAt
+                })
+                .IsDescending(false, false, true, true);
+
+                // Aggregation lookups (surviving unread row per group).
+                entity.HasIndex(n => new
+                {
+                    n.RecipientId,
+                    n.GroupKey,
+                    n.IsRead
+                });
+
                 entity.HasOne(n => n.RecipientUser)
                     .WithMany()
                     .HasForeignKey(n => n.RecipientId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // =========================================================
+            // 7b. NOTIFICATION PREFERENCES (one row per user)
+            // =========================================================
+            modelBuilder.Entity<NotificationPreference>(entity =>
+            {
+                entity.HasKey(p => p.UserId);
+                entity.Property(p => p.UserId).HasMaxLength(255);
+
+                entity.HasOne(p => p.User)
+                    .WithMany()
+                    .HasForeignKey(p => p.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

@@ -695,4 +695,80 @@ The codebase is 100% verified, clean, and tested (187/187 tests pass). The local
 All production endpoints on `https://social-api-v1.runasp.net` are verified and running the latest binaries. Feed query returns clean data with zero `UserId1` references.
 ---
 
+## Session: 2026-09-15 23:40 UTC
+### What was done
+- Fixed verification-reset bug: `PUT /api/User/update-user` cleared `IsVerified` on every profile edit.
+- Root cause: `UpdateUserDto` has no `IsVerified`, AutoMapper defaulted mapped `User.IsVerified=false`, and `UserRepository.UpdateUserAsync` copied it onto the stored user.
+- Removed `IsVerified` copy block in `Social.Infrastructure/Repositories/UserRepository.cs` (admin-only via `ToggleUserVerificationAsync`).
+- Added `.ForMember(dest => dest.IsVerified, opt => opt.Ignore())` in `Social.Application/Features/Users/UserProfile.cs`.
+- Added `Social.Tests/Unit/Features/Users/UpdateUserVerificationTests.cs` (2 regression tests, real AutoMapper).
+- Verified `dotnet build Social.sln -c Release` 0 errors; `dotnet test Social.sln -c Release` 189/189 passing (187 baseline + 2 new).
+
+### Files changed
+- `Social.Infrastructure/Repositories/UserRepository.cs`
+- `Social.Application/Features/Users/UserProfile.cs`
+- `Social.Tests/Unit/Features/Users/UpdateUserVerificationTests.cs`
+- `plans/fix-verification-reset/*`
+
+### State at end of session
+- Active feature: none (fix-verification-reset completed)
+- Blockers: None
+
+### Resume instructions
+Fix is code-complete and tested. Deploy API binaries as usual if production needs the fix immediately. Follow-ups (out of scope): UpdateUser forces UserGender to Male; UserName in DTO never persisted.
+---
+
+## Session: 2026-09-16
+### What was done
+- Full hardening of user-to-user blocking + admin platform-wide ban (blocking-hardening).
+- User blocks: bidirectional write gates in Follow/Like/Comment (400), blocked-profile read gate (401), block-filtered follower/following/pending/search, central notification suppress in NotificationRepository.
+- Admin ban: requires reason, rejects <=0 durations, refuses Admin targets, aligns blacklisted_user TTL with DB lock, records duration in audit.
+- Admin unban: dropped active-user-001 hardcode, guard is LockoutEnd > now, Unlock clears LockoutEnabled.
+- Token kill: middleware rejects blacklisted_user:{sub} via ICacheService; refresh rejects LockoutEnd > now.
+- Added Social.Tests/Unit/Blocking/BlockingHardeningTests.cs (10 tests: SQLite repo gates + handler guards).
+- Verified dotnet build Social.sln -c Release 0 errors; dotnet test Social.sln -c Release 199/199 passing.
+
+### Files changed
+- Social.Infrastructure/Repositories/FollowRepository.cs, LikeRepository.cs, CommentRepository.cs, UserRepository.cs, NotificationRepository.cs, AdminRepository.cs
+- Social.Application/Features/Admin/Users/Commands/BanUserCommand.cs, UnbanUserCommand.cs
+- Social.Application/Features/Admin/Users/Validators/BanUserCommandValidator.cs
+- Social.Application/Features/Users/Commands/RefreshTokenCommand.cs
+- Social/Middlewares/TokenBlacklistMiddleware.cs
+- Social.Tests/Infrastructure/TestAdminDoubles.cs
+- Social.Tests/Unit/Blocking/BlockingHardeningTests.cs
+- plans/blocking-hardening/*, plans/DECISIONS.md (ADR-009), plans/context.md
+
+### State at end of session
+- Active feature: none (blocking-hardening completed)
+- Blockers: None
+
+### Resume instructions
+Deploy API binaries to production to activate bans/blocks enforcement. Likes/comments list reads remain unfiltered by viewer (no contract viewer param); post-level gate covers visibility.
+---
+
+## Session: 2026-09-16 (notifications-intel)
+### What was done
+- Built intelligent in-app notification management: write-time aggregation/dedup, priority smart inbox, per-user preferences + quiet hours, digest mode.
+- Core: `Notification` += GroupKey/ActorCount/LastActorName/Priority/IsDeferred; new `NotificationPreference` entity; `NotificationPriority` + `NotificationGrouping` statics; extended `INotificationRepository` (additive only).
+- Infrastructure: `AddAsync` pipeline (block → self-skip → toggle → quiet-defer → aggregate-or-insert); `GetInboxAsync`, `GetUnreadCountAsync`, preference upsert, `ReleaseDeferredAsync`; DbContext config + indexes; additive migration `AddNotificationIntelligence` (generated, NOT applied to prod).
+- Application: `GetInboxQuery` (auto-release + items/total/unreadCount), `GetUnreadCountQuery`, `GetNotificationPreferenceQuery`, `UpdateNotificationPreferenceCommand` + validator; fixed `CreateNotification` `RecipientId` requirement.
+- API: new `GET inbox`, `GET unread-count`, `GET/PUT preferences`; fixed `Delete`/`MarkAsRead`/`Update` ownership via `OwnsNotificationAsync`.
+- Tests: `NotificationIntelligenceTests` (15 tests); fixed 3 existing tests for new contract. Full suite 214/214 passing, build 0 errors.
+
+### Files changed
+- Social.Core/Entities/Notification.cs, NotificationPreference.cs (new), NotificationPriority.cs (new), NotificationGrouping.cs (new), Interfaces/INotificationRepository.cs
+- Social.Infrastructure/Repositories/NotificationRepository.cs, Data/ApplicationDbContext.cs, Migrations/*_AddNotificationIntelligence.cs
+- Social.Application/Features/Notifications/* (DTOs, GetInboxQuery, GetUnreadCountQuery, GetNotificationPreferenceQuery, UpdateNotificationPreferenceCommand, validator)
+- Social/Controllers/NotificationsController.cs
+- Social.Tests/Unit/Notifications/NotificationIntelligenceTests.cs + 2 existing test fixes
+- plans/notifications-intel/*, plans/DECISIONS.md (ADR-010), plans/context.md
+
+### State at end of session
+- Active feature: none (notifications-intel completed)
+- Blockers: None
+
+### Resume instructions
+Migration `AddNotificationIntelligence` is additive-only but NOT applied to production — run `dotnet ef database update` with explicit human approval. Then deploy API binaries. Follow-ups (out of scope): email/push delivery, retention cleanup job, admin broadcast.
+---
+
 

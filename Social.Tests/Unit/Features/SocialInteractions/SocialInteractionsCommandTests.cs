@@ -169,6 +169,7 @@ namespace Social.Tests.Unit.Features.SocialInteractions
             var createDto = new CreateNotificationDto
             {
                 UserId = "u1",
+                RecipientId = "u2",
                 Type = "like",
                 Message = "Someone liked your post"
             };

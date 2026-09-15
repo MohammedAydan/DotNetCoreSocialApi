@@ -31,6 +31,7 @@ namespace Social.Application.Features.Notifications.Queries
             {
                 Id = notification.Id,
                 UserId = notification.UserId,
+                RecipientId = notification.RecipientId,
                 Type = notification.Type,
                 Message = notification.Message,
                 PostId = notification.PostId,
@@ -39,6 +40,11 @@ namespace Social.Application.Features.Notifications.Queries
                 LikeId = notification.LikeId,
                 ImageUrl = notification.ImageUrl,
                 IsRead = notification.IsRead,
+                IsDeferred = notification.IsDeferred,
+                GroupKey = notification.GroupKey,
+                ActorCount = notification.ActorCount,
+                LastActorName = notification.LastActorName,
+                Priority = notification.Priority,
                 CreatedAt = notification.CreatedAt
             };
         }

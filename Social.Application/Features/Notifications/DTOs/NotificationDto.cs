@@ -11,6 +11,7 @@ namespace Social.Application.Features.Notifications.DTOs
     {
         public string Id { get; set; }
         public string UserId { get; set; }
+        public string? RecipientId { get; set; }
         public UserDto SenderUser { get; set; }
         //public UserDto RecipientUser { get; set; }
         public string Type { get; set; }
@@ -21,6 +22,11 @@ namespace Social.Application.Features.Notifications.DTOs
         public string? LikeId { get; set; }
         public string? ImageUrl { get; set; }
         public bool IsRead { get; set; }
+        public bool IsDeferred { get; set; }
+        public string? GroupKey { get; set; }
+        public int ActorCount { get; set; } = 1;
+        public string? LastActorName { get; set; }
+        public int Priority { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

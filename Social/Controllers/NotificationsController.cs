@@ -115,7 +115,7 @@ namespace Social.API.Controllers
         {
             try
             {
-                if (!IsAuthorizedUser(dto.UserId))
+                if (!await OwnsNotificationAsync(id))
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 var result = await _mediator.Send(new UpdateNotificationCommand(dto));
@@ -136,7 +136,7 @@ namespace Social.API.Controllers
         {
             try
             {
-                if (!IsAuthorizedUser(id))
+                if (!await OwnsNotificationAsync(id))
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 await _mediator.Send(new DeleteNotificationCommand(id));
@@ -157,7 +157,7 @@ namespace Social.API.Controllers
         {
             try
             {
-                if (!IsAuthorizedUser(id))
+                if (!await OwnsNotificationAsync(id))
                     return ApiUnauthorized<object>("Unauthorized access.");
 
                 await _mediator.Send(new MarkNotificationAsReadCommand(id));
@@ -213,6 +213,100 @@ namespace Social.API.Controllers
         {
             var _userId = GetUserId();
             return !string.IsNullOrEmpty(_userId) && userId == _userId;
+        }
+
+        // Ownership check: the route id is a notification id, so the stored
+        // RecipientId must match the caller (previous code compared the two ids directly).
+        private async Task<bool> OwnsNotificationAsync(string notificationId)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(notificationId))
+                return false;
+            try
+            {
+                var notification = await _mediator.Send(new GetNotificationByIdQuery(notificationId));
+                return notification != null && string.Equals(notification.RecipientId, userId, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (KeyNotFoundException)
+            {
+                return false;
+            }
+        }
+
+        [HttpGet("inbox")]
+        public async Task<IActionResult> GetInbox([FromQuery] string? type = null, [FromQuery] bool unreadOnly = false, [FromQuery] int page = 1, [FromQuery] int limit = 20)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                    return ApiUnauthorized<object>("User ID is required.");
+
+                var (items, total, unreadCount) = await _mediator.Send(new GetInboxQuery(userId, type, unreadOnly, page, limit));
+
+                return ApiSuccess("Inbox retrieved successfully.", new { items, totalCount = total, unreadCount, page, limit });
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>("Failed to retrieve inbox.", ex.Message);
+            }
+        }
+
+        [HttpGet("unread-count")]
+        public async Task<IActionResult> GetUnreadCount()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                    return ApiUnauthorized<object>("User ID is required.");
+
+                var count = await _mediator.Send(new GetUnreadCountQuery(userId));
+
+                return ApiSuccess("Unread count retrieved successfully.", new { unreadCount = count });
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>("Failed to retrieve unread count.", ex.Message);
+            }
+        }
+
+        [HttpGet("preferences")]
+        public async Task<IActionResult> GetPreferences()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                    return ApiUnauthorized<object>("User ID is required.");
+
+                var result = await _mediator.Send(new GetNotificationPreferenceQuery(userId));
+
+                return ApiSuccess("Preferences retrieved successfully.", result);
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>("Failed to retrieve preferences.", ex.Message);
+            }
+        }
+
+        [HttpPut("preferences")]
+        public async Task<IActionResult> UpdatePreferences([FromBody] NotificationPreferenceDto dto)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                    return ApiUnauthorized<object>("User ID is required.");
+
+                var result = await _mediator.Send(new UpdateNotificationPreferenceCommand(userId, dto));
+
+                return ApiSuccess("Preferences updated successfully.", result);
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>("Failed to update preferences.", ex.Message);
+            }
         }
     }
 }

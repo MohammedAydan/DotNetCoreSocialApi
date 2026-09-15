@@ -194,6 +194,7 @@ namespace Social.Tests.Integration.Controllers
             var request = new CreateNotificationDto
             {
                 UserId = TestAuthHandler.DefaultUserId,
+                RecipientId = "recipient-1",
                 Type = "like",
                 Message = "New notification received"
             };
@@ -241,16 +242,17 @@ namespace Social.Tests.Integration.Controllers
             // Arrange
             var notification = new Notification
             {
-                Id = TestAuthHandler.DefaultUserId, // NotificationsController.MarkAsRead checks IsAuthorizedUser(id)
-                UserId = TestAuthHandler.DefaultUserId,
+                Id = "notif-1",
+                UserId = "some-sender",
+                RecipientId = TestAuthHandler.DefaultUserId,
                 IsRead = false
             };
 
-            _factory.MockNotificationRepository.GetByIdAsync(TestAuthHandler.DefaultUserId).Returns(notification);
+            _factory.MockNotificationRepository.GetByIdAsync("notif-1").Returns(notification);
             _factory.MockNotificationRepository.UpdateAsync(notification).Returns(Task.CompletedTask);
 
             // Act
-            var response = await _client.PostAsync($"/api/Notifications/{TestAuthHandler.DefaultUserId}/mark-read", null);
+            var response = await _client.PostAsync("/api/Notifications/notif-1/mark-read", null);
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
