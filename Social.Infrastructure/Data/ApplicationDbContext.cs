@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Social.Core.Entities;
-using System;
 
 namespace Social.Infrastructure.Data
 {
-    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<User>(options)
+    public class ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options)
+        : IdentityDbContext<User>(options)
     {
         public DbSet<Post> Posts { get; set; }
         public DbSet<Follower> Followers { get; set; }
@@ -22,169 +23,329 @@ namespace Social.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // ==========================================
-            // 1. Post Configuration & Indexes
-            // ==========================================
+            // =========================================================
+            // 1. POST
+            // =========================================================
             modelBuilder.Entity<Post>(entity =>
             {
-                // الفهرس الأساسي للـ Feed: الترتيب التنازلي الحتمي
-                entity.HasIndex(p => new { p.CreatedAt, p.Id })
-                      .IsDescending(true, true);
+                // Preserve single-column FK indexes needed in MySQL for foreign key constraints
+                entity.HasIndex(p => p.UserId);
+                entity.HasIndex(p => p.ParentPostId);
 
-                // فهرس لجلب بوستات بروفايل مستخدم معين بسرعة
-                entity.HasIndex(p => new { p.UserId, p.CreatedAt })
-                      .IsDescending(false, true);
+                // Feed ordering
+                entity.HasIndex(p => new
+                {
+                    p.CreatedAt,
+                    p.Id
+                })
+                .IsDescending(true, true);
 
-                // فهرس للفلترة حسب نوع الرؤية (Public / Private)
-                entity.HasIndex(p => new { p.Visibility, p.CreatedAt })
-                      .IsDescending(false, true);
+                // User profile posts (covering: filter + deterministic order, no sort spill)
+                entity.HasIndex(p => new
+                {
+                    p.UserId,
+                    p.CreatedAt,
+                    p.Id
+                })
+                .IsDescending(false, true, true);
 
-                // ضبط أطوال النصوص لحماية فهارس MySQL من خطأ (Key size exceeds limit)
-                entity.Property(p => p.Visibility).HasMaxLength(20);
+                // Visibility filtering (covering: filter + deterministic order)
+                entity.HasIndex(p => new
+                {
+                    p.Visibility,
+                    p.CreatedAt,
+                    p.Id
+                })
+                .IsDescending(false, true, true);
 
+                entity.Property(p => p.Visibility)
+                    .HasMaxLength(20);
+
+                // Match AspNetUsers.Id (varchar(255)) to keep FK types aligned
+                // and stay under MySQL utf8mb4 3072-byte index limit.
+                entity.Property(p => p.UserId)
+                    .HasMaxLength(255);
+
+                entity.Property(p => p.ParentPostId)
+                    .HasMaxLength(255);
+
+                // NOTE: No global HasQueryFilter(p => !p.IsDeleted) here by design.
+                // Admin moderation must list hidden/deleted posts; repositories
+                // filter !IsDeleted explicitly per query for deterministic behavior.
+
+                // IMPORTANT:
+                // User.Posts exists, so explicitly configure the inverse.
                 entity.HasOne(p => p.User)
-                      .WithMany()
-                      .HasForeignKey(p => p.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                    .WithMany(u => u.Posts)
+                    .HasForeignKey(p => p.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
+                // Self-referencing parent post
                 entity.HasOne(p => p.ParentPost)
-                      .WithMany()
-                      .HasForeignKey(p => p.ParentPostId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany()
+                    .HasForeignKey(p => p.ParentPostId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==========================================
-            // 2. Follower Configuration & Indexes
-            // ==========================================
+            // =========================================================
+            // 2. FOLLOWER
+            // =========================================================
             modelBuilder.Entity<Follower>(entity =>
             {
                 entity.HasKey(f => f.Id);
 
-                // منع تكرار المتابعة + تسريع فحص العلاقة المباشرة
-                entity.HasIndex(f => new { f.FollowerId, f.FollowingId })
-                      .IsUnique();
+                entity.Property(f => f.FollowerId).HasMaxLength(255);
+                entity.Property(f => f.FollowingId).HasMaxLength(255);
 
-                // فهرس مركب مخصص للـ Feed query (_context.Followers.Any)
-                entity.HasIndex(f => new { f.FollowerId, f.Accepted, f.FollowingId });
+                // Preserve individual FK indexes
+                entity.HasIndex(f => f.FollowerId);
+                entity.HasIndex(f => f.FollowingId);
 
-                // فهرس عكسي لتسريع جلب قائمة المتابعين (Followers List) والعدّ
-                entity.HasIndex(f => new { f.FollowingId, f.Accepted });
+                entity.HasIndex(f => new
+                {
+                    f.FollowerId,
+                    f.FollowingId
+                })
+                .IsUnique();
+
+                entity.HasIndex(f => new
+                {
+                    f.FollowerId,
+                    f.Accepted,
+                    f.FollowingId
+                });
+
+                entity.HasIndex(f => new
+                {
+                    f.FollowingId,
+                    f.Accepted
+                });
 
                 entity.HasOne(f => f.FollowerUser)
-                      .WithMany(u => u.Following)
-                      .HasForeignKey(f => f.FollowerId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany(u => u.Following)
+                    .HasForeignKey(f => f.FollowerId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(f => f.FollowingUser)
-                      .WithMany(u => u.Followers)
-                      .HasForeignKey(f => f.FollowingId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany(u => u.Followers)
+                    .HasForeignKey(f => f.FollowingId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==========================================
-            // 3. Like Configuration & Indexes
-            // ==========================================
+            // =========================================================
+            // 3. LIKE
+            // =========================================================
             modelBuilder.Entity<Like>(entity =>
             {
-                // منع عمل أكثر من Like على نفس البوست + تسريع فحص الإعجابات في الـ Feed
-                entity.HasIndex(l => new { l.UserId, l.PostId })
-                      .IsUnique();
+                entity.Property(l => l.UserId).HasMaxLength(255);
+                entity.Property(l => l.PostId).HasMaxLength(255);
 
-                // تسريع حساب عدد الإعجابات لكل بوست
+                // Preserve individual FK indexes
                 entity.HasIndex(l => l.PostId);
+                entity.HasIndex(l => l.UserId);
 
-                entity.HasOne<Post>()
-                      .WithMany(p => p.Likes)
-                      .HasForeignKey(l => l.PostId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(l => new
+                {
+                    l.UserId,
+                    l.PostId
+                })
+                .IsUnique();
+
+                // Explicit navigation -> prevents PostId1.
+                entity.HasOne(l => l.Post)
+                    .WithMany(p => p.Likes)
+                    .HasForeignKey(l => l.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Explicit User navigation.
+                entity.HasOne(l => l.User)
+                    .WithMany()
+                    .HasForeignKey(l => l.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ==========================================
-            // 4. Comment Configuration & Indexes
-            // ==========================================
+            // =========================================================
+            // 4. COMMENT
+            // =========================================================
             modelBuilder.Entity<Comment>(entity =>
             {
-                // تسريع جلب تعليقات البوست مرتبة زمنياً
-                entity.HasIndex(c => new { c.PostId, c.CreatedAt })
-                      .IsDescending(false, true);
+                entity.Property(c => c.PostId).HasMaxLength(255);
+                entity.Property(c => c.UserId).HasMaxLength(255);
+                entity.Property(c => c.ParentId).HasMaxLength(255);
 
+                // Preserve individual FK indexes
+                entity.HasIndex(c => c.PostId);
                 entity.HasIndex(c => c.UserId);
+                entity.HasIndex(c => c.ParentId);
 
-                entity.HasOne<Post>()
-                      .WithMany(p => p.Comments)
-                      .HasForeignKey(c => c.PostId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(c => new
+                {
+                    c.PostId,
+                    c.CreatedAt
+                })
+                .IsDescending(false, true);
+
+                // Explicit navigation -> prevents PostId1.
+                entity.HasOne(c => c.Post)
+                    .WithMany(p => p.Comments)
+                    .HasForeignKey(c => c.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Explicit User navigation.
+                entity.HasOne(c => c.User)
+                    .WithMany()
+                    .HasForeignKey(c => c.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Self-referencing replies.
+                entity.HasOne(c => c.Parent)
+                    .WithMany(c => c.Replies)
+                    .HasForeignKey(c => c.ParentId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==========================================
-            // 5. Media Configuration
-            // ==========================================
+            // =========================================================
+            // 5. MEDIA
+            // =========================================================
             modelBuilder.Entity<Media>(entity =>
             {
-                // تسريع جلب وسائط البوستات عند استخدام SplitQuery أو Include
-                entity.HasIndex(m => m.PostId);
+                entity.Property(m => m.PostId).HasMaxLength(255);
+                entity.Property(m => m.UserId).HasMaxLength(255);
 
-                entity.HasOne<Post>()
-                      .WithMany(p => p.Media)
-                      .HasForeignKey(m => m.PostId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                // Preserve individual FK indexes
+                entity.HasIndex(m => m.PostId);
+                entity.HasIndex(m => m.UserId);
+
+                // Explicit navigation -> prevents PostId1.
+                entity.HasOne(m => m.Post)
+                    .WithMany(p => p.Media)
+                    .HasForeignKey(m => m.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Explicit User navigation.
+                entity.HasOne(m => m.User)
+                    .WithMany()
+                    .HasForeignKey(m => m.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ==========================================
-            // 6. BlockUser Configuration
-            // ==========================================
+            // =========================================================
+            // 6. BLOCK USER
+            // =========================================================
             modelBuilder.Entity<BlockUser>(entity =>
             {
-                // 1. مفتاح مركب أساسي (Primary Key) - يضمن الفرادة تلقائياً ويوفر مساحة
-                entity.HasKey(b => new { b.UserId, b.BlockedUserId });
+                // Primary Key is Id (matches BlockUser.cs [Key] and production MySQL PRIMARY KEY)
+                entity.HasKey(b => b.Id);
 
-                // 2. فهرس عكسي ضروري جداً لفحص: "هل أنا محظور من الطرف الآخر؟"
-                entity.HasIndex(b => new { b.BlockedUserId, b.UserId });
+                entity.Property(b => b.Id).HasMaxLength(255);
+                entity.Property(b => b.UserId).HasMaxLength(255);
+                entity.Property(b => b.BlockedUserId).HasMaxLength(255);
 
-                // 3. منع أخطاء تضارب الحذف المتتالي (Multiple Cascade Paths)
+                // Preserve individual FK indexes
+                entity.HasIndex(b => b.UserId);
+                entity.HasIndex(b => b.BlockedUserId);
+
+                // Performance index for bidirectional block checks
+                entity.HasIndex(b => new
+                {
+                    b.BlockedUserId,
+                    b.UserId
+                });
+
                 entity.HasOne(b => b.User)
-                      .WithMany()
-                      .HasForeignKey(b => b.UserId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany()
+                    .HasForeignKey(b => b.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(b => b.BlockedUser)
-                      .WithMany()
-                      .HasForeignKey(b => b.BlockedUserId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany()
+                    .HasForeignKey(b => b.BlockedUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==========================================
-            // 7. Notification Configuration
-            // ==========================================
+            // =========================================================
+            // 7. NOTIFICATION
+            // =========================================================
             modelBuilder.Entity<Notification>(entity =>
             {
-                // تسريع جلب الإشعارات غير المقروءة للمستخدم
-                entity.HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAt })
-                      .IsDescending(false, false, true);
+                entity.Property(n => n.UserId).HasMaxLength(255);
+                entity.Property(n => n.RecipientId).HasMaxLength(255);
+
+                // Preserve individual FK indexes
+                entity.HasIndex(n => n.UserId);
+                entity.HasIndex(n => n.RecipientId);
+
+                entity.HasIndex(n => new
+                {
+                    n.UserId,
+                    n.IsRead,
+                    n.CreatedAt
+                })
+                .IsDescending(false, false, true);
+
+                entity.HasOne(n => n.RecipientUser)
+                    .WithMany()
+                    .HasForeignKey(n => n.RecipientId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ==========================================
-            // 8. RefreshToken Configuration
-            // ==========================================
+            // =========================================================
+            // 8. REFRESH TOKEN
+            // =========================================================
             modelBuilder.Entity<RefreshToken>(entity =>
             {
-                entity.Property(r => r.Token).HasMaxLength(512);
-                entity.HasIndex(r => r.Token).IsUnique();
+                entity.Property(r => r.Token)
+                    .HasMaxLength(512);
 
-                entity.Property(r => r.UserId).HasMaxLength(450);
+                entity.HasIndex(r => r.Token)
+                    .IsUnique();
+
+                // Match AspNetUsers.Id length (varchar(255))
+                entity.Property(r => r.UserId)
+                    .HasMaxLength(255);
+
                 entity.HasIndex(r => r.UserId);
+
+                // IMPORTANT:
+                // RefreshToken has a real User navigation.
+                // Configure that exact navigation instead of
+                // creating another anonymous relationship.
+                entity.HasOne(r => r.User)
+                    .WithMany()
+                    .HasForeignKey(r => r.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ==========================================
-            // 9. UTC DateTime & Precision Setup
-            // ==========================================
-            var utcConverter = new ValueConverter<DateTime, DateTime>(
-                v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
-                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            // =========================================================
+            // 9. UTC DATETIME + MICROSECOND PRECISION
+            // =========================================================
+            var utcConverter =
+                new ValueConverter<DateTime, DateTime>(
+                    v => v.Kind == DateTimeKind.Utc
+                        ? v
+                        : DateTime.SpecifyKind(
+                            v,
+                            DateTimeKind.Utc),
 
-            var nullableUtcConverter = new ValueConverter<DateTime?, DateTime?>(
-                v => !v.HasValue ? v : (v.Value.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)),
-                v => !v.HasValue ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc));
+                    v => DateTime.SpecifyKind(
+                        v,
+                        DateTimeKind.Utc));
+
+            var nullableUtcConverter =
+                new ValueConverter<DateTime?, DateTime?>(
+                    v => !v.HasValue
+                        ? v
+                        : v.Value.Kind == DateTimeKind.Utc
+                            ? v
+                            : DateTime.SpecifyKind(
+                                v.Value,
+                                DateTimeKind.Utc),
+
+                    v => !v.HasValue
+                        ? v
+                        : DateTime.SpecifyKind(
+                            v.Value,
+                            DateTimeKind.Utc));
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
@@ -193,7 +354,6 @@ namespace Social.Infrastructure.Data
                     if (property.ClrType == typeof(DateTime))
                     {
                         property.SetValueConverter(utcConverter);
-                        // ضروري جداً لـ MySQL لمنع تساوي الأوقات في الترتيب (Microsecond Precision)
                         property.SetPrecision(6);
                     }
                     else if (property.ClrType == typeof(DateTime?))
