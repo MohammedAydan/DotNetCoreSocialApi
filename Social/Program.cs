@@ -1,5 +1,6 @@
 using DotNetEnv;
 using Microsoft.OpenApi.Models;
+using Social.Admin.Web;
 using Social.API.Configuration;
 using Social.API.Extensions;
 using Social.API.Middlewares;
@@ -24,6 +25,8 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.IgnoreReadOnlyProperties = true;
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.JsonSerializerOptions.Converters.Add(new Social.API.Serialization.UtcDateTimeJsonConverter());
+    options.JsonSerializerOptions.Converters.Add(new Social.API.Serialization.NullableUtcDateTimeJsonConverter());
 });
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi  
@@ -70,6 +73,7 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddCoreDI();
 builder.AddInfrastructureDI();
 builder.Services.AddApplicationDI();
+builder.Services.AddAdminWebUI();
 
 builder.Services.AddTransient<AuthEndpoints>();
 
@@ -94,7 +98,7 @@ builder.Services.AddCors(options =>
                     "https://mohammed-aydan.site",
                     "https://social-eg.vercel.app"
                      ])
-                .WithOrigins(["http://localhost:3000", "http://localhost:8080", "http://localhost:5173"])
+                .WithOrigins(["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5157/"])
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials(); // only if using cookies/auth
@@ -120,6 +124,8 @@ if (app.Environment.IsDevelopment())
 // Use CORS before any redirect
 app.UseCors("AllowLocalhost");
 
+app.UseStaticFiles();
+
 // Global exception handling
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
@@ -138,6 +144,21 @@ app.UseMiddleware<TokenBlacklistMiddleware>();
 // });
 
 app.MapControllers();
+
+// Database & Role Seeding
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var seeder = scope.ServiceProvider.GetRequiredService<Social.Core.Interfaces.IDatabaseSeeder>();
+        await seeder.SeedAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning("Database seeding skipped or encountered an error: {Message}", ex.Message);
+    }
+}
 
 app.Run();
 
