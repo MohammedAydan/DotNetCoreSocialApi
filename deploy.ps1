@@ -46,8 +46,8 @@ $FtpBaseUri = 'ftp://site26082.siteasp.net/'
 $UseFtps = $false
 
 # Public URL used to verify the application after deployment.
-# Prefer a dedicated health endpoint if your API has one.
-$HealthCheckUrl = 'https://site26082.siteasp.net/'
+# /admin/login returns HTTP 200 on a healthy host.
+$HealthCheckUrl = 'https://social-api-v1.runasp.net/admin/login'
 
 $HealthCheckAttempts = 12
 $HealthCheckDelaySeconds = 5
@@ -603,16 +603,17 @@ try {
             continue
         }
 
-        $relativePath = $file.FullName.Substring($publishRoot.Length).TrimStart('\', '/')
+        $relativePath = $file.FullName.Substring($publishRoot.Length).TrimStart('\', '/').Replace('\', '/')
 
-        if ($relativePath -match '^(?:publish/)+') {
-            throw "Unexpected nested publish output detected: $relativePath"
+        if ($relativePath -match '^publish/') {
+            $excludedCount++
+            continue
         }
 
         [void]$filesToUpload.Add(
             [PSCustomObject]@{
                 LocalFile = $file.FullName
-                RelativePath = $relativePath.Replace('\', '/')
+                RelativePath = $relativePath
             }
         )
     }

@@ -53,3 +53,5 @@
 | Assertion Library | FluentAssertions | 7.2.0 | Fluent, readable assertions |
 | Mocking Library | NSubstitute | 5.3.0 | Modern mock library for .NET |
 | Web Test Host | Microsoft.AspNetCore.Mvc.Testing | 9.0.2 | In-memory WebApplicationFactory |
+| EF Test Provider | Microsoft.EntityFrameworkCore.InMemory | 9.0.4 | Non-relational probe only; ExecuteUpdate unsupported |
+| Relational Test DB | Microsoft.EntityFrameworkCore.Sqlite | 9.0.4 | SQLite in-memory for ExecuteUpdate/transaction repo tests |

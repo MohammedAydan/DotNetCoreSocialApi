@@ -144,6 +144,7 @@ app.UseMiddleware<TokenBlacklistMiddleware>();
 // });
 
 app.MapControllers();
+app.MapGet("/api/probe-build", () => Results.Ok(new { build = "BUILD_VERIFICATION_CHECK_123", timestamp = DateTime.UtcNow }));
 
 // Database & Role Seeding
 if (!app.Environment.IsEnvironment("Testing"))

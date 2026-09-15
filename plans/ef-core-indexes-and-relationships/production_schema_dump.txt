@@ -1,0 +1,236 @@
+=== PRODUCTION DATABASE SCHEMA DUMP ===
+Database: db18830
+Timestamp UTC: 2026-09-15 18:28:40
+
+--- __EFMigrationsHistory ---
+Migration: 20250517213954_InitialMigration | ProductVersion: 9.0.4
+Migration: 20260208224707_InitialTables | ProductVersion: 9.0.4
+Migration: 20260209000001_AddBlockUsersTable | ProductVersion: 9.0.4
+Migration: 20260209000225_InitialUpdateBlockUserTable | ProductVersion: 9.0.4
+Migration: 20260915011757_AddAuditLogsTable | ProductVersion: 9.0.4
+Migration: 20260915163717_AddIndexes | ProductVersion: 9.0.4
+Migration: 20260915165036_TunePostFeedIndexes | ProductVersion: 9.0.4
+
+--- SHOW CREATE TABLE Posts ---
+CREATE TABLE `posts` (
+  `Id` varchar(255) NOT NULL,
+  `UserId` varchar(255) NOT NULL,
+  `Title` longtext DEFAULT NULL,
+  `Content` longtext DEFAULT NULL,
+  `Visibility` varchar(20) NOT NULL,
+  `IsDeleted` tinyint(1) NOT NULL,
+  `LikesCount` int(11) NOT NULL,
+  `ShareingsCount` int(11) NOT NULL,
+  `CommentsCount` int(11) NOT NULL,
+  `ParentPostId` varchar(255) DEFAULT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Posts_ParentPostId` (`ParentPostId`),
+  KEY `IX_Posts_UserId` (`UserId`),
+  KEY `IX_Posts_CreatedAt_Id` (`CreatedAt` DESC,`Id` DESC),
+  KEY `IX_Posts_UserId_CreatedAt_Id` (`UserId`,`CreatedAt` DESC,`Id` DESC),
+  KEY `IX_Posts_Visibility_CreatedAt_Id` (`Visibility`,`CreatedAt` DESC,`Id` DESC),
+  CONSTRAINT `FK_Posts_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_Posts_Posts_ParentPostId` FOREIGN KEY (`ParentPostId`) REFERENCES `posts` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+--- SHOW CREATE TABLE BlockUsers ---
+CREATE TABLE `blockusers` (
+  `Id` varchar(255) NOT NULL,
+  `UserId` varchar(255) NOT NULL,
+  `BlockedUserId` varchar(255) NOT NULL,
+  `BlockedAt` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_BlockUsers_BlockedUserId` (`BlockedUserId`),
+  KEY `IX_BlockUsers_UserId` (`UserId`),
+  KEY `IX_BlockUsers_BlockedUserId_UserId` (`BlockedUserId`,`UserId`),
+  CONSTRAINT `FK_BlockUsers_AspNetUsers_BlockedUserId` FOREIGN KEY (`BlockedUserId`) REFERENCES `aspnetusers` (`Id`),
+  CONSTRAINT `FK_BlockUsers_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+--- SHOW CREATE TABLE RefreshTokens ---
+CREATE TABLE `refreshtokens` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `Token` varchar(512) NOT NULL,
+  `Expires` datetime(6) NOT NULL,
+  `Created` datetime(6) NOT NULL,
+  `Revoked` datetime(6) DEFAULT NULL,
+  `UserId` varchar(255) NOT NULL,
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `IX_RefreshTokens_Token` (`Token`),
+  KEY `FK_RefreshTokens_AspNetUsers_UserId` (`UserId`),
+  CONSTRAINT `FK_RefreshTokens_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4247 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+--- SHOW CREATE TABLE Likes ---
+CREATE TABLE `likes` (
+  `Id` varchar(255) NOT NULL,
+  `PostId` varchar(255) NOT NULL,
+  `UserId` varchar(255) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `IX_Likes_UserId_PostId` (`UserId`,`PostId`),
+  KEY `IX_Likes_PostId` (`PostId`),
+  KEY `IX_Likes_UserId` (`UserId`),
+  CONSTRAINT `FK_Likes_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_Likes_Posts_PostId` FOREIGN KEY (`PostId`) REFERENCES `posts` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+--- SHOW CREATE TABLE Comments ---
+CREATE TABLE `comments` (
+  `Id` varchar(255) NOT NULL,
+  `PostId` varchar(255) NOT NULL,
+  `UserId` varchar(255) NOT NULL,
+  `Content` longtext NOT NULL,
+  `ParentId` varchar(255) DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL,
+  `RepliesCount` int(11) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Comments_ParentId` (`ParentId`),
+  KEY `IX_Comments_PostId` (`PostId`),
+  KEY `IX_Comments_UserId` (`UserId`),
+  KEY `IX_Comments_PostId_CreatedAt` (`PostId`,`CreatedAt` DESC),
+  CONSTRAINT `FK_Comments_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_Comments_Comments_ParentId` FOREIGN KEY (`ParentId`) REFERENCES `comments` (`Id`),
+  CONSTRAINT `FK_Comments_Posts_PostId` FOREIGN KEY (`PostId`) REFERENCES `posts` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+--- SHOW CREATE TABLE Media ---
+CREATE TABLE `media` (
+  `Id` varchar(255) NOT NULL,
+  `PostId` varchar(255) NOT NULL,
+  `UserId` varchar(255) NOT NULL,
+  `Name` longtext NOT NULL,
+  `Type` longtext NOT NULL,
+  `Url` longtext NOT NULL,
+  `ThumbnailUrl` longtext DEFAULT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Media_PostId` (`PostId`),
+  KEY `IX_Media_UserId` (`UserId`),
+  CONSTRAINT `FK_Media_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_Media_Posts_PostId` FOREIGN KEY (`PostId`) REFERENCES `posts` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+--- SHOW CREATE TABLE Notifications ---
+CREATE TABLE `notifications` (
+  `Id` varchar(255) NOT NULL,
+  `UserId` varchar(255) DEFAULT NULL,
+  `RecipientId` varchar(255) NOT NULL,
+  `Type` longtext NOT NULL,
+  `Message` longtext NOT NULL,
+  `PostId` longtext DEFAULT NULL,
+  `CommentId` longtext DEFAULT NULL,
+  `LikeId` longtext DEFAULT NULL,
+  `FollowId` longtext DEFAULT NULL,
+  `FollowerId` longtext DEFAULT NULL,
+  `ImageUrl` longtext DEFAULT NULL,
+  `IsRead` tinyint(1) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `IsDeleted` tinyint(1) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Notifications_RecipientId` (`RecipientId`),
+  KEY `IX_Notifications_UserId` (`UserId`),
+  KEY `IX_Notifications_UserId_IsRead_CreatedAt` (`UserId`,`IsRead`,`CreatedAt` DESC),
+  CONSTRAINT `FK_Notifications_AspNetUsers_RecipientId` FOREIGN KEY (`RecipientId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_Notifications_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+--- SHOW CREATE TABLE AspNetUsers ---
+CREATE TABLE `aspnetusers` (
+  `Id` varchar(255) NOT NULL,
+  `FirstName` longtext NOT NULL,
+  `LastName` longtext NOT NULL,
+  `BirthDate` datetime(6) NOT NULL,
+  `Bio` longtext DEFAULT NULL,
+  `ProfileImageUrl` longtext DEFAULT NULL,
+  `CoverImageUrl` longtext DEFAULT NULL,
+  `IsVerified` tinyint(1) NOT NULL,
+  `IsPrivate` tinyint(1) NOT NULL,
+  `FollowersCount` int(11) NOT NULL,
+  `FollowingCount` int(11) NOT NULL,
+  `PostsCount` int(11) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) NOT NULL,
+  `UserName` varchar(256) DEFAULT NULL,
+  `NormalizedUserName` varchar(256) DEFAULT NULL,
+  `Email` varchar(256) DEFAULT NULL,
+  `NormalizedEmail` varchar(256) DEFAULT NULL,
+  `EmailConfirmed` tinyint(1) NOT NULL,
+  `PasswordHash` longtext DEFAULT NULL,
+  `SecurityStamp` longtext DEFAULT NULL,
+  `ConcurrencyStamp` longtext DEFAULT NULL,
+  `PhoneNumber` longtext DEFAULT NULL,
+  `PhoneNumberConfirmed` tinyint(1) NOT NULL,
+  `TwoFactorEnabled` tinyint(1) NOT NULL,
+  `LockoutEnd` datetime DEFAULT NULL,
+  `LockoutEnabled` tinyint(1) NOT NULL,
+  `AccessFailedCount` int(11) NOT NULL,
+  `userGender` longtext DEFAULT NULL,
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `UserNameIndex` (`NormalizedUserName`),
+  KEY `EmailIndex` (`NormalizedEmail`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+
+--- FOREIGN KEYS (INFORMATION_SCHEMA.KEY_COLUMN_USAGE) ---
+Table: blockusers | Constraint: FK_BlockUsers_AspNetUsers_BlockedUserId | Column: BlockedUserId -> RefTable: aspnetusers (Id)
+Table: blockusers | Constraint: FK_BlockUsers_AspNetUsers_UserId | Column: UserId -> RefTable: aspnetusers (Id)
+Table: comments | Constraint: FK_Comments_AspNetUsers_UserId | Column: UserId -> RefTable: aspnetusers (Id)
+Table: comments | Constraint: FK_Comments_Comments_ParentId | Column: ParentId -> RefTable: comments (Id)
+Table: comments | Constraint: FK_Comments_Posts_PostId | Column: PostId -> RefTable: posts (Id)
+Table: likes | Constraint: FK_Likes_AspNetUsers_UserId | Column: UserId -> RefTable: aspnetusers (Id)
+Table: likes | Constraint: FK_Likes_Posts_PostId | Column: PostId -> RefTable: posts (Id)
+Table: media | Constraint: FK_Media_AspNetUsers_UserId | Column: UserId -> RefTable: aspnetusers (Id)
+Table: media | Constraint: FK_Media_Posts_PostId | Column: PostId -> RefTable: posts (Id)
+Table: notifications | Constraint: FK_Notifications_AspNetUsers_RecipientId | Column: RecipientId -> RefTable: aspnetusers (Id)
+Table: notifications | Constraint: FK_Notifications_AspNetUsers_UserId | Column: UserId -> RefTable: aspnetusers (Id)
+Table: posts | Constraint: FK_Posts_AspNetUsers_UserId | Column: UserId -> RefTable: aspnetusers (Id)
+Table: posts | Constraint: FK_Posts_Posts_ParentPostId | Column: ParentPostId -> RefTable: posts (Id)
+Table: refreshtokens | Constraint: FK_RefreshTokens_AspNetUsers_UserId | Column: UserId -> RefTable: aspnetusers (Id)
+
+--- INDEXES (INFORMATION_SCHEMA.STATISTICS) ---
+Table: blockusers | Index: IX_BlockUsers_BlockedUserId | NonUnique: 1 | Seq: 1 | Column: BlockedUserId
+Table: blockusers | Index: IX_BlockUsers_BlockedUserId_UserId | NonUnique: 1 | Seq: 1 | Column: BlockedUserId
+Table: blockusers | Index: IX_BlockUsers_BlockedUserId_UserId | NonUnique: 1 | Seq: 2 | Column: UserId
+Table: blockusers | Index: IX_BlockUsers_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: blockusers | Index: PRIMARY | NonUnique: 0 | Seq: 1 | Column: Id
+Table: comments | Index: IX_Comments_ParentId | NonUnique: 1 | Seq: 1 | Column: ParentId
+Table: comments | Index: IX_Comments_PostId | NonUnique: 1 | Seq: 1 | Column: PostId
+Table: comments | Index: IX_Comments_PostId_CreatedAt | NonUnique: 1 | Seq: 1 | Column: PostId
+Table: comments | Index: IX_Comments_PostId_CreatedAt | NonUnique: 1 | Seq: 2 | Column: CreatedAt
+Table: comments | Index: IX_Comments_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: comments | Index: PRIMARY | NonUnique: 0 | Seq: 1 | Column: Id
+Table: likes | Index: IX_Likes_PostId | NonUnique: 1 | Seq: 1 | Column: PostId
+Table: likes | Index: IX_Likes_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: likes | Index: IX_Likes_UserId_PostId | NonUnique: 0 | Seq: 1 | Column: UserId
+Table: likes | Index: IX_Likes_UserId_PostId | NonUnique: 0 | Seq: 2 | Column: PostId
+Table: likes | Index: PRIMARY | NonUnique: 0 | Seq: 1 | Column: Id
+Table: media | Index: IX_Media_PostId | NonUnique: 1 | Seq: 1 | Column: PostId
+Table: media | Index: IX_Media_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: media | Index: PRIMARY | NonUnique: 0 | Seq: 1 | Column: Id
+Table: notifications | Index: IX_Notifications_RecipientId | NonUnique: 1 | Seq: 1 | Column: RecipientId
+Table: notifications | Index: IX_Notifications_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: notifications | Index: IX_Notifications_UserId_IsRead_CreatedAt | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: notifications | Index: IX_Notifications_UserId_IsRead_CreatedAt | NonUnique: 1 | Seq: 2 | Column: IsRead
+Table: notifications | Index: IX_Notifications_UserId_IsRead_CreatedAt | NonUnique: 1 | Seq: 3 | Column: CreatedAt
+Table: notifications | Index: PRIMARY | NonUnique: 0 | Seq: 1 | Column: Id
+Table: posts | Index: IX_Posts_CreatedAt_Id | NonUnique: 1 | Seq: 1 | Column: CreatedAt
+Table: posts | Index: IX_Posts_CreatedAt_Id | NonUnique: 1 | Seq: 2 | Column: Id
+Table: posts | Index: IX_Posts_ParentPostId | NonUnique: 1 | Seq: 1 | Column: ParentPostId
+Table: posts | Index: IX_Posts_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: posts | Index: IX_Posts_UserId_CreatedAt_Id | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: posts | Index: IX_Posts_UserId_CreatedAt_Id | NonUnique: 1 | Seq: 2 | Column: CreatedAt
+Table: posts | Index: IX_Posts_UserId_CreatedAt_Id | NonUnique: 1 | Seq: 3 | Column: Id
+Table: posts | Index: IX_Posts_Visibility_CreatedAt_Id | NonUnique: 1 | Seq: 1 | Column: Visibility
+Table: posts | Index: IX_Posts_Visibility_CreatedAt_Id | NonUnique: 1 | Seq: 2 | Column: CreatedAt
+Table: posts | Index: IX_Posts_Visibility_CreatedAt_Id | NonUnique: 1 | Seq: 3 | Column: Id
+Table: posts | Index: PRIMARY | NonUnique: 0 | Seq: 1 | Column: Id
+Table: refreshtokens | Index: FK_RefreshTokens_AspNetUsers_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
+Table: refreshtokens | Index: IX_RefreshTokens_Token | NonUnique: 0 | Seq: 1 | Column: Token
+Table: refreshtokens | Index: PRIMARY | NonUnique: 0 | Seq: 1 | Column: Id

@@ -5,9 +5,8 @@ namespace Social.Core.Entities
 {
     public class BlockUser
     {
-        [Key]
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        
+
         [Required]
         public required string UserId { get; set; }
         
