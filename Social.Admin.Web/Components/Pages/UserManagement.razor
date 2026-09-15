@@ -1,0 +1,429 @@
+@namespace Social.Admin.Web.Components.Pages
+@using Social.Admin.Web.Models
+@using Social.Admin.Web.Services
+@using Social.Admin.Web.Components.Common
+@using Social.Admin.Web.Components.Modals
+@inject IAdminDashboardService AdminService
+
+<div class="user-management-page">
+    @if (!string.IsNullOrEmpty(FeedbackMessage))
+    {
+        <div class="alert @(IsFeedbackError ? "alert-danger" : "alert-success") alert-dismissible">
+            <span>@FeedbackMessage</span>
+            <button class="btn-close-alert" @onclick='() => FeedbackMessage = null'>&times;</button>
+        </div>
+    }
+
+    <div class="filter-toolbar">
+        <div class="search-box">
+            <input type="text" class="form-control" placeholder="Search by username, email, name..." 
+                   @bind="Filter.Query" @bind:event="oninput" @onkeyup="HandleSearchKeyUp" />
+            <button class="btn btn-primary" @onclick="SearchUsers">Search</button>
+        </div>
+
+        <div class="filter-dropdowns">
+            <select class="form-select" @bind="Filter.Role" @bind:after="SearchUsers">
+                <option value="">All Roles</option>
+                <option value="Admin">Admin</option>
+                <option value="Moderator">Moderator</option>
+                <option value="User">User</option>
+            </select>
+
+            <select class="form-select" @bind="StatusFilter" @bind:after="ApplyStatusFilter">
+                <option value="">All Statuses</option>
+                <option value="active">Active Only</option>
+                <option value="banned">Banned / Locked</option>
+            </select>
+
+            <select class="form-select" @bind="VerifiedFilter" @bind:after="ApplyVerifiedFilter">
+                <option value="">All Accounts</option>
+                <option value="verified">Verified Badge</option>
+                <option value="unverified">Standard</option>
+            </select>
+
+            <button class="btn btn-secondary" @onclick="ResetFilters" title="Reset all filters">Reset</button>
+        </div>
+    </div>
+
+    <div class="panel-card table-panel">
+        <div class="table-responsive">
+            <table class="admin-data-table">
+                <thead>
+                    <tr>
+                        <th>User Profile</th>
+                        <th>Email Address</th>
+                        <th>Assigned Roles</th>
+                        <th>Verification</th>
+                        <th>Account Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (IsLoading)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="spinner"></div>
+                                <span class="loading-text">Loading directory records...</span>
+                            </td>
+                        </tr>
+                    }
+                    else if (Users.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                No user accounts matching the specified criteria.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var user in Users)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="avatar-small">
+                                            @if (!string.IsNullOrEmpty(user.ProfileImageUrl))
+                                            {
+                                                <img src="@user.ProfileImageUrl" alt="@user.UserName" />
+                                            }
+                                            else
+                                            {
+                                                <span>@(user.UserName.Length > 0 ? user.UserName[..1].ToUpperInvariant() : "U")</span>
+                                            }
+                                        </div>
+                                        <div class="user-info-text">
+                                            <span class="user-name">@user.FullName</span>
+                                            <span class="user-username">@@@user.UserName</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="email-text">@user.Email</span>
+                                </td>
+                                <td>
+                                    <div class="role-badges">
+                                        @foreach (var role in user.Roles)
+                                        {
+                                            <StatusBadge Text="@role" Variant="@role.ToLowerInvariant()" ShowDot="false" />
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <button class="btn-badge-toggle @(user.IsVerified ? "verified" : "")" 
+                                            @onclick='() => ToggleVerification(user)' 
+                                            title="Click to toggle verified badge">
+                                        @(user.IsVerified ? "✓ Verified" : "+ Standard")
+                                    </button>
+                                </td>
+                                <td>
+                                    @if (user.IsLockedOut)
+                                    {
+                                        <StatusBadge Text="Banned / Locked" Variant="danger" />
+                                    }
+                                    else
+                                    {
+                                        <StatusBadge Text="Active" Variant="success" />
+                                    }
+                                </td>
+                                <td class="text-right">
+                                    <div class="action-btn-group">
+                                        @if (user.IsLockedOut)
+                                        {
+                                            <button class="btn-table-action btn-unban" @onclick='() => OpenUnbanModal(user)' title="Unban user">
+                                                Unban
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn-table-action btn-ban" @onclick='() => OpenBanModal(user)' title="Ban user">
+                                                Ban
+                                            </button>
+                                        }
+                                        <button class="btn-table-action btn-roles" @onclick='() => OpenRoleModal(user)' title="Manage roles">
+                                            Roles
+                                        </button>
+                                        <button class="btn-table-action btn-reset" @onclick='() => OpenResetPasswordModal(user)' title="Reset password">
+                                            PW
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <PaginationControl Page="Filter.Page" PageSize="Filter.PageSize" TotalCount="TotalCount" PageChanged="HandlePageChanged" />
+    </div>
+
+    <!-- Modals -->
+    <BanUserModal @bind-IsOpen="IsBanModalOpen" Model="BanModel" OnConfirm="ExecuteBan" />
+    <UnbanUserModal @bind-IsOpen="IsUnbanModalOpen" UserId="@SelectedUserId" UserName="@SelectedUserName" OnConfirm="ExecuteUnban" />
+    <RoleManagerModal @bind-IsOpen="IsRoleModalOpen" Model="RoleModel" IsSelf="@(SelectedUserId == CurrentAdminId)" OnConfirm="ExecuteRoleUpdate" />
+    <ResetPasswordModal @bind-IsOpen="IsResetPasswordModalOpen" Model="ResetPasswordModel" OnConfirm="ExecutePasswordReset" />
+</div>
+
+@code {
+    [Parameter] public string CurrentAdminId { get; set; } = "current-admin-id";
+    [Parameter] public string CurrentAdminEmail { get; set; } = "admin@social.local";
+
+    private UserFilterModel Filter { get; set; } = new() { Page = 1, PageSize = 15 };
+    private List<AdminUserListItemModel> Users { get; set; } = new();
+    private int TotalCount { get; set; } = 0;
+    private bool IsLoading { get; set; } = false;
+
+    private string StatusFilter { get; set; } = string.Empty;
+    private string VerifiedFilter { get; set; } = string.Empty;
+
+    private string? FeedbackMessage;
+    private bool IsFeedbackError = false;
+
+    // Modals state
+    private bool IsBanModalOpen = false;
+    private BanUserModalModel BanModel = new();
+
+    private bool IsUnbanModalOpen = false;
+    private string SelectedUserId = string.Empty;
+    private string SelectedUserName = string.Empty;
+
+    private bool IsRoleModalOpen = false;
+    private UpdateRolesModalModel RoleModel = new();
+
+    private bool IsResetPasswordModalOpen = false;
+    private ResetPasswordModalModel ResetPasswordModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        IsLoading = true;
+        try
+        {
+            var result = await AdminService.GetUsersAsync(Filter);
+            Users = result.Items;
+            TotalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            SetFeedback(ex.Message, true);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SearchUsers()
+    {
+        Filter.Page = 1;
+        await LoadUsers();
+    }
+
+    private async Task HandleSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchUsers();
+        }
+    }
+
+    private void ApplyStatusFilter()
+    {
+        Filter.IsLocked = StatusFilter switch
+        {
+            "active" => false,
+            "banned" => true,
+            _ => null
+        };
+        Filter.Page = 1;
+        _ = LoadUsers();
+    }
+
+    private void ApplyVerifiedFilter()
+    {
+        Filter.IsVerified = VerifiedFilter switch
+        {
+            "verified" => true,
+            "unverified" => false,
+            _ => null
+        };
+        Filter.Page = 1;
+        _ = LoadUsers();
+    }
+
+    private async Task ResetFilters()
+    {
+        Filter = new UserFilterModel { Page = 1, PageSize = 15 };
+        StatusFilter = string.Empty;
+        VerifiedFilter = string.Empty;
+        await LoadUsers();
+    }
+
+    private async Task HandlePageChanged(int newPage)
+    {
+        Filter.Page = newPage;
+        await LoadUsers();
+    }
+
+    private void OpenBanModal(AdminUserListItemModel user)
+    {
+        BanModel = new BanUserModalModel
+        {
+            UserId = user.Id,
+            UserName = user.UserName,
+            DurationDays = 7,
+            Reason = string.Empty,
+            IsPermanent = false
+        };
+        IsBanModalOpen = true;
+    }
+
+    private async Task ExecuteBan(BanUserModalModel model)
+    {
+        try
+        {
+            var success = await AdminService.BanUserAsync(CurrentAdminId, CurrentAdminEmail, model);
+            if (success)
+            {
+                SetFeedback($"User '{model.UserName}' has been locked and active sessions revoked.", false);
+                await LoadUsers();
+            }
+            else
+            {
+                SetFeedback("Failed to ban user.", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            SetFeedback(ex.Message, true);
+        }
+    }
+
+    private void OpenUnbanModal(AdminUserListItemModel user)
+    {
+        SelectedUserId = user.Id;
+        SelectedUserName = user.UserName;
+        IsUnbanModalOpen = true;
+    }
+
+    private async Task ExecuteUnban((string UserId, string Reason) data)
+    {
+        try
+        {
+            var success = await AdminService.UnbanUserAsync(CurrentAdminId, CurrentAdminEmail, data.UserId, data.Reason);
+            if (success)
+            {
+                SetFeedback($"User '{SelectedUserName}' has been unbanned.", false);
+                await LoadUsers();
+            }
+            else
+            {
+                SetFeedback("Failed to unban user.", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            SetFeedback(ex.Message, true);
+        }
+    }
+
+    private void OpenRoleModal(AdminUserListItemModel user)
+    {
+        SelectedUserId = user.Id;
+        SelectedUserName = user.UserName;
+        RoleModel = new UpdateRolesModalModel
+        {
+            UserId = user.Id,
+            UserName = user.UserName,
+            IsAdmin = user.Roles.Contains("Admin", StringComparer.OrdinalIgnoreCase),
+            IsModerator = user.Roles.Contains("Moderator", StringComparer.OrdinalIgnoreCase),
+            IsUser = user.Roles.Contains("User", StringComparer.OrdinalIgnoreCase)
+        };
+        IsRoleModalOpen = true;
+    }
+
+    private async Task ExecuteRoleUpdate(UpdateRolesModalModel model)
+    {
+        try
+        {
+            var success = await AdminService.UpdateUserRolesAsync(CurrentAdminId, CurrentAdminEmail, model);
+            if (success)
+            {
+                SetFeedback($"Roles updated successfully for user '{model.UserName}'.", false);
+                await LoadUsers();
+            }
+            else
+            {
+                SetFeedback("Failed to update user roles.", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            SetFeedback(ex.Message, true);
+        }
+    }
+
+    private async Task ToggleVerification(AdminUserListItemModel user)
+    {
+        try
+        {
+            var newStatus = !user.IsVerified;
+            var success = await AdminService.ToggleUserVerificationAsync(CurrentAdminId, CurrentAdminEmail, user.Id, newStatus);
+            if (success)
+            {
+                user.IsVerified = newStatus;
+                SetFeedback($"Verification status updated for '{user.UserName}'.", false);
+            }
+            else
+            {
+                SetFeedback("Failed to update verification status.", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            SetFeedback(ex.Message, true);
+        }
+    }
+
+    private void OpenResetPasswordModal(AdminUserListItemModel user)
+    {
+        ResetPasswordModel = new ResetPasswordModalModel
+        {
+            UserId = user.Id,
+            UserName = user.UserName
+        };
+        IsResetPasswordModalOpen = true;
+    }
+
+    private async Task ExecutePasswordReset(ResetPasswordModalModel model)
+    {
+        try
+        {
+            var success = await AdminService.ResetUserPasswordAsync(CurrentAdminId, CurrentAdminEmail, model);
+            if (success)
+            {
+                SetFeedback($"Password reset successfully for user '{model.UserName}'.", false);
+            }
+            else
+            {
+                SetFeedback("Failed to reset password.", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            SetFeedback(ex.Message, true);
+        }
+    }
+
+    private void SetFeedback(string message, bool isError)
+    {
+        FeedbackMessage = message;
+        IsFeedbackError = isError;
+    }
+}

@@ -1,0 +1,50 @@
+@namespace Social.Admin.Web.Components.Modals
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop" @onclick="HandleCancel">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3 class="modal-title">Unban User Account</h3>
+                <button class="modal-close" @onclick="HandleCancel">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-instruction">
+                    You are restoring account access for user: <strong>@UserName</strong> (ID: <code>@UserId</code>).
+                </p>
+                <div class="form-group">
+                    <label>Reason / Audit Note (Optional)</label>
+                    <input type="text" class="form-control" placeholder="e.g. Appeal granted, lockout expired..." @bind="Reason" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="HandleCancel">Cancel</button>
+                <button class="btn btn-success" @onclick="HandleSubmit">Confirm Unban</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public string UserId { get; set; } = string.Empty;
+    [Parameter] public string UserName { get; set; } = string.Empty;
+    [Parameter] public string Reason { get; set; } = string.Empty;
+    [Parameter] public EventCallback<(string UserId, string Reason)> OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        await OnConfirm.InvokeAsync((UserId, Reason));
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

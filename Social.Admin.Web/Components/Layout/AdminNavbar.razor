@@ -1,0 +1,40 @@
+@namespace Social.Admin.Web.Components.Layout
+
+<header class="admin-navbar">
+    <div class="navbar-left">
+        <h1 class="page-title">@GetPageTitle()</h1>
+        <span class="live-indicator" title="Live connection active">
+            <span class="pulse-dot"></span>
+            System Live
+        </span>
+    </div>
+
+    <div class="navbar-right">
+        <div class="admin-profile">
+            <div class="avatar-circle">AD</div>
+            <div class="profile-info">
+                <span class="profile-name">@(AdminEmail ?? "Admin Console")</span>
+                <span class="profile-role">Platform Administrator</span>
+            </div>
+        </div>
+
+        <a href="/openapi/v1.json" target="_blank" class="btn-openapi" title="View OpenAPI Specification">
+            <span>API Docs</span>
+        </a>
+    </div>
+</header>
+
+@code {
+    [Parameter] public string CurrentTab { get; set; } = "overview";
+    [Parameter] public string? AdminEmail { get; set; }
+
+    private string GetPageTitle() => CurrentTab switch
+    {
+        "overview" => "Platform Overview & Real-Time Analytics",
+        "users" => "User & Identity Directory",
+        "moderation" => "Content Moderation & Oversight",
+        "audit" => "Administrative Audit Trail",
+        "diagnostics" => "System Observability & Runtime Diagnostics",
+        _ => "Administration Dashboard"
+    };
+}

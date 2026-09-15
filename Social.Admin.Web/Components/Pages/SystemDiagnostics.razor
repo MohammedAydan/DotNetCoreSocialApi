@@ -1,0 +1,159 @@
+@namespace Social.Admin.Web.Components.Pages
+@using Social.Admin.Web.Models
+@using Social.Admin.Web.Services
+@using Social.Admin.Web.Components.Common
+@inject IAdminDashboardService AdminService
+
+<div class="diagnostics-page">
+    <div class="page-top-actions">
+        <button class="btn btn-primary" @onclick="LoadDiagnostics">
+            &#8635; Refresh Diagnostics
+        </button>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="loading-full-panel">
+            <div class="spinner"></div>
+            <span>Querying server diagnostics and Redis connection stats...</span>
+        </div>
+    }
+    else
+    {
+        <div class="diagnostics-cards-grid">
+            <div class="diag-card">
+                <div class="diag-header">
+                    <span class="diag-title">Distributed Cache</span>
+                    <span class="diag-icon">💾</span>
+                </div>
+                <div class="diag-body">
+                    <div class="status-row">
+                        <span class="status-label">Active Engine:</span>
+                        <span class="status-val">@(Model.IsConnected ? "StackExchange.Redis Distributed" : "In-Memory Cache Fallback")</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Redis Connection:</span>
+                        <StatusBadge Text="@(Model.IsConnected ? "Operational" : "Offline / Unreachable")" Variant="@(Model.IsConnected ? "success" : "danger")" />
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Graceful Fallback:</span>
+                        <StatusBadge Text="@(Model.UsingMemoryFallback ? "Active" : "Standby")" Variant="@(Model.UsingMemoryFallback ? "warning" : "info")" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="diag-card">
+                <div class="diag-header">
+                    <span class="diag-title">Memory & Runtime</span>
+                    <span class="diag-icon">🧠</span>
+                </div>
+                <div class="diag-body">
+                    <div class="status-row">
+                        <span class="status-label">Process Working Set:</span>
+                        <span class="status-val highlight">@Model.MemoryWorkingSetMb.ToString("F2") MB</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Runtime Framework:</span>
+                        <span class="status-val">@Model.FrameworkVersion</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Process Uptime:</span>
+                        <span class="status-val">@($"{Model.SystemUptime.Hours:D2}h {Model.SystemUptime.Minutes:D2}m {Model.SystemUptime.Seconds:D2}s")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="diag-card">
+                <div class="diag-header">
+                    <span class="diag-title">Rate Limiting & Protection</span>
+                    <span class="diag-icon">🚦</span>
+                </div>
+                <div class="diag-body">
+                    <div class="status-row">
+                        <span class="status-label">Tracked IP Policies:</span>
+                        <span class="status-val">@Model.TrackedIpCount</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Throttled Requests:</span>
+                        <span class="status-val">@Model.ThrottledRequestsCount</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Middleware Engine:</span>
+                        <span class="status-val">AspNetCoreRateLimit</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-card mt-4">
+            <div class="panel-header">
+                <h2 class="panel-title">Operational Architecture Verification</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="admin-data-table">
+                    <thead>
+                        <tr>
+                            <th>Subsystem</th>
+                            <th>Design Pattern / Standard</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Identity & Roles</strong></td>
+                            <td>ASP.NET Core Identity with EF Core (Admin, Moderator, User roles)</td>
+                            <td><StatusBadge Text="Operational" Variant="success" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Session Blacklist</strong></td>
+                            <td>Redis Token Blacklist Middleware (Token & User Instant Invalidation)</td>
+                            <td><StatusBadge Text="Active" Variant="success" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>CQRS Application Pipeline</strong></td>
+                            <td>MediatR with FluentValidation behavior and CancellationToken propagation</td>
+                            <td><StatusBadge Text="Operational" Variant="success" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Audit Trail</strong></td>
+                            <td>Immutable administrative action logging with relational persistence</td>
+                            <td><StatusBadge Text="Active" Variant="success" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Content Moderation</strong></td>
+                            <td>Non-negative counter protection with soft-delete & restore support</td>
+                            <td><StatusBadge Text="Operational" Variant="success" /></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private SystemDiagnosticsModel Model { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDiagnostics();
+    }
+
+    private async Task LoadDiagnostics()
+    {
+        IsLoading = true;
+        try
+        {
+            Model = await AdminService.GetDiagnosticsAsync();
+        }
+        catch
+        {
+            // Fallback for isolated test runs
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

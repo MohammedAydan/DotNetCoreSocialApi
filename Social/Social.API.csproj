@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Social.Application\Social.Application.csproj" />
     <ProjectReference Include="..\Social.Infrastructure\Social.Infrastructure.csproj" />
     <ProjectReference Include="..\Social.Core\Social.Core.csproj" />
+    <ProjectReference Include="..\Social.Admin.Web\Social.Admin.Web.csproj" />
   </ItemGroup>
 
 </Project>

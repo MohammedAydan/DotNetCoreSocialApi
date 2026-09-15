@@ -1,0 +1,34 @@
+@namespace Social.Admin.Web.Components.Common
+
+<div class="metric-card @ThemeClass">
+    <div class="metric-header">
+        <span class="metric-title">@Title</span>
+        <span class="metric-icon">@Icon</span>
+    </div>
+    <div class="metric-body">
+        <div class="metric-value">@Value</div>
+        @if (!string.IsNullOrEmpty(Subtitle))
+        {
+            <div class="metric-subtitle">@Subtitle</div>
+        }
+    </div>
+    @if (!string.IsNullOrEmpty(Trend))
+    {
+        <div class="metric-footer">
+            <span class="metric-trend @(TrendPositive ? "trend-up" : "trend-down")">
+                @(TrendPositive ? "▲" : "▼") @Trend
+            </span>
+            <span class="trend-period">vs yesterday</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = "--";
+    [Parameter] public string Icon { get; set; } = "📊";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Trend { get; set; }
+    [Parameter] public bool TrendPositive { get; set; } = true;
+    [Parameter] public string ThemeClass { get; set; } = "theme-blue";
+}

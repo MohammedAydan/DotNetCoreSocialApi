@@ -1,0 +1,62 @@
+@namespace Social.Admin.Web.Components.Pages
+@using Social.Admin.Web.Models
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-brand">
+            <div class="brand-shield">🛡️</div>
+            <h1 class="brand-title">Social Admin Console</h1>
+            <p class="brand-subtitle">Platform Management & Observability</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                <span>@ErrorMessage</span>
+            </div>
+        }
+
+        <form @onsubmit="HandleLogin" class="login-form">
+            <div class="form-group">
+                <label for="admin-email">Administrator Email</label>
+                <input type="email" id="admin-email" class="form-control" placeholder="admin@example.com" required
+                       @bind="Model.Email" />
+            </div>
+
+            <div class="form-group">
+                <label for="admin-password">Password</label>
+                <input type="password" id="admin-password" class="form-control" placeholder="••••••••••••" required
+                       @bind="Model.Password" />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" disabled="@IsSubmitting">
+                @if (IsSubmitting)
+                {
+                    <span class="spinner-small"></span>
+                    <span>Authenticating...</span>
+                }
+                else
+                {
+                    <span>Sign In to Admin Console</span>
+                }
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <span>Requires administrative credentials. Regular accounts will be denied access.</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<AdminLoginRequest> OnSubmit { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool IsSubmitting { get; set; }
+
+    private AdminLoginRequest Model { get; set; } = new();
+
+    private async Task HandleLogin()
+    {
+        await OnSubmit.InvokeAsync(Model);
+    }
+}

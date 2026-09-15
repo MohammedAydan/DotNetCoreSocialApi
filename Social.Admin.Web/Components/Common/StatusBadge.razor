@@ -1,0 +1,25 @@
+@namespace Social.Admin.Web.Components.Common
+
+<span class="status-badge @GetBadgeClass()">
+    @if (ShowDot)
+    {
+        <span class="badge-dot"></span>
+    }
+    @Text
+</span>
+
+@code {
+    [Parameter] public string Text { get; set; } = string.Empty;
+    [Parameter] public string Variant { get; set; } = "default"; // success, warning, danger, info, purple, default
+    [Parameter] public bool ShowDot { get; set; } = true;
+
+    private string GetBadgeClass() => Variant.ToLowerInvariant() switch
+    {
+        "success" or "active" or "verified" => "badge-success",
+        "danger" or "banned" or "deleted" or "locked" => "badge-danger",
+        "warning" or "moderator" or "pending" => "badge-warning",
+        "info" or "admin" => "badge-info",
+        "purple" => "badge-purple",
+        _ => "badge-default"
+    };
+}

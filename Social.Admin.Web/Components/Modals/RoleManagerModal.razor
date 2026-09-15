@@ -1,0 +1,79 @@
+@namespace Social.Admin.Web.Components.Modals
+@using Social.Admin.Web.Models
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop" @onclick="HandleCancel">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3 class="modal-title">Manage User Roles</h3>
+                <button class="modal-close" @onclick="HandleCancel">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-instruction">
+                    Assign or revoke platform roles for user: <strong>@Model.UserName</strong>.
+                </p>
+                
+                @if (IsSelf)
+                {
+                    <div class="alert alert-warning">
+                        <strong>Security Invariant:</strong> You are editing your own roles. You cannot remove the <code>Admin</code> role from yourself.
+                    </div>
+                }
+
+                <div class="checkbox-group">
+                    <label class="checkbox-card @(Model.IsAdmin ? "checked" : "")">
+                        <input type="checkbox" @bind="Model.IsAdmin" disabled="@IsSelf" />
+                        <div class="checkbox-content">
+                            <span class="role-title">Administrator</span>
+                            <span class="role-desc">Full access to system configuration, user management, metrics, and logs.</span>
+                        </div>
+                    </label>
+
+                    <label class="checkbox-card @(Model.IsModerator ? "checked" : "")">
+                        <input type="checkbox" @bind="Model.IsModerator" />
+                        <div class="checkbox-content">
+                            <span class="role-title">Moderator</span>
+                            <span class="role-desc">Access to moderation feed, hiding/restoring content, and media review.</span>
+                        </div>
+                    </label>
+
+                    <label class="checkbox-card @(Model.IsUser ? "checked" : "")">
+                        <input type="checkbox" @bind="Model.IsUser" />
+                        <div class="checkbox-content">
+                            <span class="role-title">User</span>
+                            <span class="role-desc">Standard member access for creating posts, comments, likes, and profile.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="HandleCancel">Cancel</button>
+                <button class="btn btn-primary" @onclick="HandleSubmit">Save Roles</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public UpdateRolesModalModel Model { get; set; } = new();
+    [Parameter] public bool IsSelf { get; set; } = false;
+    [Parameter] public EventCallback<UpdateRolesModalModel> OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        await OnConfirm.InvokeAsync(Model);
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

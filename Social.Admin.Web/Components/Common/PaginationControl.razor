@@ -1,0 +1,48 @@
+@namespace Social.Admin.Web.Components.Common
+
+<div class="pagination-container">
+    <div class="pagination-info">
+        Showing <strong>@StartRecord</strong> to <strong>@EndRecord</strong> of <strong>@TotalCount</strong> results
+    </div>
+    
+    <div class="pagination-actions">
+        <button class="btn-page" disabled="@(!CanGoPrev)" @onclick="PrevPage">
+            &larr; Prev
+        </button>
+        <span class="page-indicator">Page @Page of @TotalPages</span>
+        <button class="btn-page" disabled="@(!CanGoNext)" @onclick="NextPage">
+            Next &rarr;
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Page { get; set; } = 1;
+    [Parameter] public int PageSize { get; set; } = 15;
+    [Parameter] public int TotalCount { get; set; } = 0;
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)TotalCount / Math.Max(1, PageSize)));
+    private bool CanGoPrev => Page > 1;
+    private bool CanGoNext => Page < TotalPages;
+    private int StartRecord => TotalCount == 0 ? 0 : ((Page - 1) * PageSize) + 1;
+    private int EndRecord => Math.Min(Page * PageSize, TotalCount);
+
+    private async Task PrevPage()
+    {
+        if (CanGoPrev)
+        {
+            Page--;
+            await PageChanged.InvokeAsync(Page);
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (CanGoNext)
+        {
+            Page++;
+            await PageChanged.InvokeAsync(Page);
+        }
+    }
+}

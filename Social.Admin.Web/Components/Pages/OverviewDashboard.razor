@@ -1,0 +1,117 @@
+@namespace Social.Admin.Web.Components.Pages
+@using Social.Admin.Web.Models
+@using Social.Admin.Web.Services
+@using Social.Admin.Web.Components.Common
+@inject IAdminDashboardService AdminService
+
+<div class="dashboard-page">
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <span>Gathering platform metrics...</span>
+        </div>
+    }
+    else
+    {
+        <div class="stats-overview-grid">
+            <MetricCard Title="Total Users" Value="@Stats.TotalUsers.ToString("N0")" Icon="👥" ThemeClass="theme-blue" Subtitle="Registered platform accounts" />
+            <MetricCard Title="24h Active Users" Value="@Stats.ActiveUsers24h.ToString("N0")" Icon="🟢" ThemeClass="theme-emerald" Subtitle="Active in the past 24 hours" />
+            <MetricCard Title="Published Posts" Value="@Stats.TotalPosts.ToString("N0")" Icon="📝" ThemeClass="theme-indigo" Subtitle="Active non-deleted posts" />
+            <MetricCard Title="Comments & Replies" Value="@Stats.TotalComments.ToString("N0")" Icon="💬" ThemeClass="theme-amber" Subtitle="Total conversation items" />
+            <MetricCard Title="Total Likes & Hearts" Value="@Stats.TotalLikes.ToString("N0")" Icon="❤️" ThemeClass="theme-rose" Subtitle="Platform engagement reactions" />
+            <MetricCard Title="Process Working Set" Value="@($"{Stats.MemoryWorkingSetMb:F1} MB")" Icon="⚡" ThemeClass="theme-cyan" Subtitle="Process memory footprint" />
+        </div>
+
+        <div class="overview-panels-grid">
+            <div class="panel-card system-health-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">System & Cache Status</h2>
+                    <button class="btn-refresh" @onclick="LoadData" title="Refresh Metrics">&#8635; Refresh</button>
+                </div>
+                <div class="health-indicators">
+                    <div class="indicator-item">
+                        <span class="indicator-label">Redis Distributed Cache:</span>
+                        <StatusBadge Text="@(Stats.IsRedisConnected ? "Connected" : "Disconnected")" Variant="@(Stats.IsRedisConnected ? "success" : "danger")" />
+                    </div>
+                    <div class="indicator-item">
+                        <span class="indicator-label">In-Memory Cache Fallback:</span>
+                        <StatusBadge Text="@(Stats.IsMemoryFallbackActive ? "Active Fallback" : "Disabled (Redis Primary)")" Variant="@(Stats.IsMemoryFallbackActive ? "warning" : "success")" />
+                    </div>
+                    <div class="indicator-item">
+                        <span class="indicator-label">Server Environment:</span>
+                        <span class="env-tag">@Stats.Environment</span>
+                    </div>
+                    <div class="indicator-item">
+                        <span class="indicator-label">Last Snapshot:</span>
+                        <span class="timestamp-tag">@Stats.LastUpdatedUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card quick-actions-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Operational Quick Actions</h2>
+                </div>
+                <div class="quick-action-buttons">
+                    <button class="btn-action-card" @onclick='() => NavigateTo("users")'>
+                        <span class="action-icon">👥</span>
+                        <span class="action-title">Browse Directory</span>
+                        <span class="action-desc">Manage accounts, lockouts, and permissions</span>
+                    </button>
+                    <button class="btn-action-card" @onclick='() => NavigateTo("moderation")'>
+                        <span class="action-icon">🛡️</span>
+                        <span class="action-title">Review Feed</span>
+                        <span class="action-desc">Inspect reported media and hide abusive content</span>
+                    </button>
+                    <button class="btn-action-card" @onclick='() => NavigateTo("audit")'>
+                        <span class="action-icon">📜</span>
+                        <span class="action-title">Inspect Audit Log</span>
+                        <span class="action-desc">Review chronological security and moderation actions</span>
+                    </button>
+                    <button class="btn-action-card" @onclick='() => NavigateTo("diagnostics")'>
+                        <span class="action-icon">⚡</span>
+                        <span class="action-title">System Diagnostics</span>
+                        <span class="action-desc">Inspect memory, rate limits, and cache health</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter] public Layout.AdminLayout? Layout { get; set; }
+
+    private AdminDashboardStatsModel Stats { get; set; } = new();
+    private bool IsLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        IsLoading = true;
+        try
+        {
+            Stats = await AdminService.GetOverviewStatsAsync();
+        }
+        catch
+        {
+            // Fallback defaults on network or local test doubles
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [Parameter] public EventCallback<string> OnNavigate { get; set; }
+
+    private async Task NavigateTo(string tab)
+    {
+        await OnNavigate.InvokeAsync(tab);
+    }
+}

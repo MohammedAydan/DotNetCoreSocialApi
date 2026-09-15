@@ -1,0 +1,44 @@
+@namespace Social.Admin.Web.Components.Layout
+@inherits LayoutComponentBase
+
+<div class="admin-shell">
+    <AdminSidebar @bind-ActiveTab="ActiveTab" />
+
+    <div class="admin-main-wrapper">
+        <AdminNavbar CurrentTab="@ActiveTab" AdminEmail="@AdminEmail" />
+
+        <main class="admin-content-area">
+            @if (ActiveTab == "overview")
+            {
+                <OverviewDashboard OnNavigate='tab => ActiveTab = tab' />
+            }
+            else if (ActiveTab == "users")
+            {
+                <UserManagement />
+            }
+            else if (ActiveTab == "moderation")
+            {
+                <ContentModeration />
+            }
+            else if (ActiveTab == "audit")
+            {
+                <AuditLogViewer />
+            }
+            else if (ActiveTab == "diagnostics")
+            {
+                <SystemDiagnostics />
+            }
+            else
+            {
+                @Body
+            }
+        </main>
+
+        <AdminFooter />
+    </div>
+</div>
+
+@code {
+    [Parameter] public string ActiveTab { get; set; } = "overview";
+    [Parameter] public string? AdminEmail { get; set; }
+}

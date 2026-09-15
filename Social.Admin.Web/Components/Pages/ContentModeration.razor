@@ -1,0 +1,294 @@
+@namespace Social.Admin.Web.Components.Pages
+@using Social.Admin.Web.Models
+@using Social.Admin.Web.Services
+@using Social.Admin.Web.Components.Common
+@using Social.Admin.Web.Components.Modals
+@inject IAdminDashboardService AdminService
+
+<div class="content-moderation-page">
+    @if (!string.IsNullOrEmpty(FeedbackMessage))
+    {
+        <div class="alert @(IsFeedbackError ? "alert-danger" : "alert-success") alert-dismissible">
+            <span>@FeedbackMessage</span>
+            <button class="btn-close-alert" @onclick='() => FeedbackMessage = null'>&times;</button>
+        </div>
+    }
+
+    <div class="filter-toolbar">
+        <div class="search-box">
+            <input type="text" class="form-control" placeholder="Search moderation text..." 
+                   @bind="Filter.Search" @bind:event="oninput" @onkeyup="HandleSearchKeyUp" />
+            <button class="btn btn-primary" @onclick="SearchFeed">Filter</button>
+        </div>
+
+        <div class="filter-dropdowns">
+            <select class="form-select" @bind="Filter.ItemType" @bind:after="SearchFeed">
+                <option value="">All Content Types</option>
+                <option value="Post">Posts Only</option>
+                <option value="Comment">Comments Only</option>
+            </select>
+
+            <select class="form-select" @bind="StatusFilter" @bind:after="ApplyStatusFilter">
+                <option value="">All Visibility</option>
+                <option value="active">Active Content</option>
+                <option value="hidden">Hidden / Removed</option>
+            </select>
+
+            <select class="form-select" @bind="MediaFilter" @bind:after="ApplyMediaFilter">
+                <option value="">Media: Any</option>
+                <option value="with_media">Has Media Attachments</option>
+                <option value="text_only">Text Only</option>
+            </select>
+
+            <button class="btn btn-secondary" @onclick="ResetFilters">Reset</button>
+        </div>
+    </div>
+
+    <div class="moderation-feed-grid">
+        @if (IsLoading)
+        {
+            <div class="loading-full-panel">
+                <div class="spinner"></div>
+                <span>Scanning content items...</span>
+            </div>
+        }
+        else if (Items.Count == 0)
+        {
+            <div class="empty-panel">
+                <span class="empty-icon">🛡️</span>
+                <p>No moderation feed items match the active filters.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var item in Items)
+            {
+                <div class="moderation-card @(item.IsDeleted ? "card-hidden" : "")">
+                    <div class="card-top-bar">
+                        <div class="item-meta">
+                            <span class="item-type-tag @item.ItemType.ToLowerInvariant()">@item.ItemType</span>
+                            <span class="item-id">#@item.Id</span>
+                            <span class="item-time">@item.CreatedAt.ToString("MMM dd, yyyy HH:mm") UTC</span>
+                        </div>
+                        <div>
+                            @if (item.IsDeleted)
+                            {
+                                <StatusBadge Text="Hidden / Soft-Deleted" Variant="danger" />
+                            }
+                            else
+                            {
+                                <StatusBadge Text="Public / Visible" Variant="success" />
+                            }
+                        </div>
+                    </div>
+
+                    <div class="author-bar">
+                        <div class="avatar-tiny">
+                            @if (!string.IsNullOrEmpty(item.AuthorProfileImageUrl))
+                            {
+                                <img src="@item.AuthorProfileImageUrl" alt="@item.AuthorUserName" />
+                            }
+                            else
+                            {
+                                <span>@(item.AuthorUserName.Length > 0 ? item.AuthorUserName[..1].ToUpperInvariant() : "U")</span>
+                            }
+                        </div>
+                        <span class="author-name">@@@item.AuthorUserName</span>
+                        <span class="author-id">(ID: @item.AuthorId)</span>
+                    </div>
+
+                    <div class="item-content-body">
+                        <p class="content-text">@item.Content</p>
+                    </div>
+
+                    @if (item.Media.Count > 0)
+                    {
+                        <div class="item-media-gallery">
+                            @foreach (var media in item.Media)
+                            {
+                                <div class="media-thumb-wrapper" title="@media.Name">
+                                    <img src="@(media.ThumbnailUrl ?? media.Url)" alt="@media.Name" class="media-thumb-img" />
+                                    <span class="media-type-badge">@media.Type</span>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="card-bottom-bar">
+                        <div class="engagement-stats">
+                            <span>❤️ @item.LikesCount likes</span>
+                            @if (item.ItemType == "Post")
+                            {
+                                <span>💬 @item.CommentsCount comments</span>
+                            }
+                        </div>
+
+                        <div class="card-actions">
+                            @if (item.IsDeleted)
+                            {
+                                <button class="btn btn-sm btn-success" @onclick='() => OpenActionModal(item, false)'>
+                                    Restore Content
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-danger" @onclick='() => OpenActionModal(item, true)'>
+                                    Hide Content
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="pagination-wrapper mt-4">
+        <PaginationControl Page="Filter.Page" PageSize="Filter.PageSize" TotalCount="TotalCount" PageChanged="HandlePageChanged" />
+    </div>
+
+    <ModerationActionModal @bind-IsOpen="IsActionModalOpen" Model="ActionModel" OnConfirm="ExecuteModerationAction" />
+</div>
+
+@code {
+    [Parameter] public string CurrentAdminId { get; set; } = "current-admin-id";
+    [Parameter] public string CurrentAdminEmail { get; set; } = "admin@social.local";
+
+    private ModerationFilterModel Filter { get; set; } = new() { Page = 1, PageSize = 12 };
+    private List<ModerationItemModel> Items { get; set; } = new();
+    private int TotalCount { get; set; } = 0;
+    private bool IsLoading { get; set; } = false;
+
+    private string StatusFilter { get; set; } = string.Empty;
+    private string MediaFilter { get; set; } = string.Empty;
+
+    private string? FeedbackMessage;
+    private bool IsFeedbackError = false;
+
+    private bool IsActionModalOpen = false;
+    private ModerationActionModel ActionModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFeed();
+    }
+
+    private async Task LoadFeed()
+    {
+        IsLoading = true;
+        try
+        {
+            var result = await AdminService.GetModerationFeedAsync(Filter);
+            Items = result.Items;
+            TotalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            SetFeedback(ex.Message, true);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SearchFeed()
+    {
+        Filter.Page = 1;
+        await LoadFeed();
+    }
+
+    private async Task HandleSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchFeed();
+        }
+    }
+
+    private void ApplyStatusFilter()
+    {
+        Filter.IsDeleted = StatusFilter switch
+        {
+            "active" => false,
+            "hidden" => true,
+            _ => null
+        };
+        Filter.Page = 1;
+        _ = LoadFeed();
+    }
+
+    private void ApplyMediaFilter()
+    {
+        Filter.HasMedia = MediaFilter switch
+        {
+            "with_media" => true,
+            "text_only" => false,
+            _ => null
+        };
+        Filter.Page = 1;
+        _ = LoadFeed();
+    }
+
+    private async Task ResetFilters()
+    {
+        Filter = new ModerationFilterModel { Page = 1, PageSize = 12 };
+        StatusFilter = string.Empty;
+        MediaFilter = string.Empty;
+        await LoadFeed();
+    }
+
+    private async Task HandlePageChanged(int newPage)
+    {
+        Filter.Page = newPage;
+        await LoadFeed();
+    }
+
+    private void OpenActionModal(ModerationItemModel item, bool hide)
+    {
+        ActionModel = new ModerationActionModel
+        {
+            ItemId = item.Id,
+            ItemType = item.ItemType,
+            Hide = hide,
+            Reason = string.Empty
+        };
+        IsActionModalOpen = true;
+    }
+
+    private async Task ExecuteModerationAction(ModerationActionModel model)
+    {
+        try
+        {
+            bool success;
+            if (model.ItemType.Equals("Post", StringComparison.OrdinalIgnoreCase))
+            {
+                success = await AdminService.ModeratePostAsync(CurrentAdminId, CurrentAdminEmail, model.ItemId, model.Hide, model.Reason);
+            }
+            else
+            {
+                success = await AdminService.ModerateCommentAsync(CurrentAdminId, CurrentAdminEmail, model.ItemId, model.Hide, model.Reason);
+            }
+
+            if (success)
+            {
+                SetFeedback($"Successfully {(model.Hide ? "hidden" : "restored")} {model.ItemType} #{model.ItemId}.", false);
+                await LoadFeed();
+            }
+            else
+            {
+                SetFeedback("Moderation action could not be completed.", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            SetFeedback(ex.Message, true);
+        }
+    }
+
+    private void SetFeedback(string message, bool isError)
+    {
+        FeedbackMessage = message;
+        IsFeedbackError = isError;
+    }
+}

@@ -1,0 +1,220 @@
+@namespace Social.Admin.Web.Components.Pages
+@using Social.Admin.Web.Models
+@using Social.Admin.Web.Services
+@using Social.Admin.Web.Components.Common
+@inject IAdminDashboardService AdminService
+
+<div class="audit-log-page">
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible">
+            <span>@ErrorMessage</span>
+            <button class="btn-close-alert" @onclick='() => ErrorMessage = null'>&times;</button>
+        </div>
+    }
+
+    <div class="filter-toolbar">
+        <div class="filter-dropdowns">
+            <select class="form-select" @bind="Filter.ActionType" @bind:after="SearchLogs">
+                <option value="">All Action Types</option>
+                <option value="UserBanned">User Banned</option>
+                <option value="UserUnbanned">User Unbanned</option>
+                <option value="RolesUpdated">Roles Updated</option>
+                <option value="VerificationToggled">Verification Toggled</option>
+                <option value="AdminPasswordReset">Password Reset</option>
+                <option value="PostHidden">Post Hidden</option>
+                <option value="PostRestored">Post Restored</option>
+                <option value="CommentHidden">Comment Hidden</option>
+                <option value="CommentRestored">Comment Restored</option>
+            </select>
+
+            <input type="text" class="form-control admin-id-input" placeholder="Filter by Admin ID..." 
+                   @bind="Filter.AdminId" @bind:event="oninput" @onkeyup="HandleKeyUp" />
+
+            <div class="date-range-inputs">
+                <input type="date" class="form-control" @bind="Filter.FromDate" @bind:after="SearchLogs" title="From Date" />
+                <span class="date-sep">to</span>
+                <input type="date" class="form-control" @bind="Filter.ToDate" @bind:after="SearchLogs" title="To Date" />
+            </div>
+
+            <button class="btn btn-primary" @onclick="SearchLogs">Filter</button>
+            <button class="btn btn-secondary" @onclick="ResetFilters">Reset</button>
+        </div>
+    </div>
+
+    <div class="panel-card table-panel">
+        <div class="table-responsive">
+            <table class="admin-data-table audit-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Administrator</th>
+                        <th>Action Type</th>
+                        <th>Target Resource</th>
+                        <th>Reason / Justification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (IsLoading)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="spinner"></div>
+                                <span class="loading-text">Loading audit logs...</span>
+                            </td>
+                        </tr>
+                    }
+                    else if (Logs.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                No audit events recorded matching current filters.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var log in Logs)
+                        {
+                            <tr class="audit-row" @onclick='() => InspectLog(log)'>
+                                <td class="timestamp-cell">
+                                    <span class="time-main">@log.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                                </td>
+                                <td>
+                                    <div class="admin-cell">
+                                        <span class="admin-email">@(log.AdminEmail ?? "Admin")</span>
+                                        <span class="admin-id-small">@log.AdminId</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <StatusBadge Text="@log.ActionType" Variant="@GetActionVariant(log.ActionType)" ShowDot="false" />
+                                </td>
+                                <td>
+                                    <div class="target-cell">
+                                        <span class="target-entity">@log.TargetEntity</span>
+                                        <code class="target-id">@log.TargetId</code>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="reason-text">@(string.IsNullOrEmpty(log.Reason) ? "—" : log.Reason)</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <PaginationControl Page="Filter.Page" PageSize="Filter.PageSize" TotalCount="TotalCount" PageChanged="HandlePageChanged" />
+    </div>
+
+    @if (SelectedLog != null)
+    {
+        <div class="modal-backdrop" @onclick='() => SelectedLog = null'>
+            <div class="modal-dialog log-detail-dialog" @onclick:stopPropagation="true">
+                <div class="modal-header">
+                    <h3 class="modal-title">Audit Event Details #@SelectedLog.Id</h3>
+                    <button class="modal-close" @onclick='() => SelectedLog = null'>&times;</button>
+                </div>
+                <div class="modal-body">
+                    <dl class="detail-list">
+                        <dt>Timestamp:</dt>
+                        <dd>@SelectedLog.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss.fff") UTC</dd>
+
+                        <dt>Action Type:</dt>
+                        <dd><StatusBadge Text="@SelectedLog.ActionType" Variant="@GetActionVariant(SelectedLog.ActionType)" /></dd>
+
+                        <dt>Admin Identity:</dt>
+                        <dd>@SelectedLog.AdminEmail (ID: <code>@SelectedLog.AdminId</code>)</dd>
+
+                        <dt>Target Entity:</dt>
+                        <dd>@SelectedLog.TargetEntity</dd>
+
+                        <dt>Target ID:</dt>
+                        <dd><code>@SelectedLog.TargetId</code></dd>
+
+                        <dt>Audit Reason:</dt>
+                        <dd class="reason-quote">@(string.IsNullOrEmpty(SelectedLog.Reason) ? "No reason specified" : SelectedLog.Reason)</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick='() => SelectedLog = null'>Close</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private AuditLogFilterModel Filter { get; set; } = new() { Page = 1, PageSize = 20 };
+    private List<AuditLogItemModel> Logs { get; set; } = new();
+    private int TotalCount { get; set; } = 0;
+    private bool IsLoading { get; set; } = false;
+    private string? ErrorMessage;
+    private AuditLogItemModel? SelectedLog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLogs();
+    }
+
+    private async Task LoadLogs()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            var result = await AdminService.GetAuditLogsAsync(Filter);
+            Logs = result.Items;
+            TotalCount = result.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SearchLogs()
+    {
+        Filter.Page = 1;
+        await LoadLogs();
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchLogs();
+        }
+    }
+
+    private async Task ResetFilters()
+    {
+        Filter = new AuditLogFilterModel { Page = 1, PageSize = 20 };
+        await LoadLogs();
+    }
+
+    private async Task HandlePageChanged(int newPage)
+    {
+        Filter.Page = newPage;
+        await LoadLogs();
+    }
+
+    private void InspectLog(AuditLogItemModel log)
+    {
+        SelectedLog = log;
+    }
+
+    private string GetActionVariant(string actionType) => actionType switch
+    {
+        "UserBanned" or "PostHidden" or "CommentHidden" => "danger",
+        "UserUnbanned" or "PostRestored" or "CommentRestored" => "success",
+        "RolesUpdated" or "VerificationToggled" => "info",
+        "AdminPasswordReset" => "warning",
+        _ => "default"
+    };
+}

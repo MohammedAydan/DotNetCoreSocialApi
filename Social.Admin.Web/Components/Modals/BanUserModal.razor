@@ -1,0 +1,89 @@
+@namespace Social.Admin.Web.Components.Modals
+@using Social.Admin.Web.Models
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop" @onclick="HandleCancel">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3 class="modal-title">Ban User Account</h3>
+                <button class="modal-close" @onclick="HandleCancel">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-instruction">
+                    You are applying an administrative ban to user: <strong>@Model.UserName</strong> (ID: <code>@Model.UserId</code>).
+                </p>
+                <div class="form-group">
+                    <label>Ban Duration</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="duration" checked="@(!Model.IsPermanent && Model.DurationDays == 1)" @onchange='() => SetDuration(1, false)' />
+                            24 Hours
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="duration" checked="@(!Model.IsPermanent && Model.DurationDays == 7)" @onchange='() => SetDuration(7, false)' />
+                            7 Days
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="duration" checked="@(!Model.IsPermanent && Model.DurationDays == 30)" @onchange='() => SetDuration(30, false)' />
+                            30 Days
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="duration" checked="@Model.IsPermanent" @onchange='() => SetDuration(36500, true)' />
+                            Permanent
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mandatory Reason / Justification</label>
+                    <textarea class="form-control" rows="3" placeholder="Specify violations (e.g. Terms of Service, harassment, spam)..." @bind="Model.Reason"></textarea>
+                    @if (string.IsNullOrWhiteSpace(Model.Reason) && ShowValidation)
+                    {
+                        <span class="validation-error">A reason must be provided for audit compliance.</span>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="HandleCancel">Cancel</button>
+                <button class="btn btn-danger" @onclick="HandleSubmit">Confirm Ban</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public BanUserModalModel Model { get; set; } = new();
+    [Parameter] public EventCallback<BanUserModalModel> OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool ShowValidation { get; set; } = false;
+
+    private void SetDuration(int days, bool permanent)
+    {
+        Model.DurationDays = days;
+        Model.IsPermanent = permanent;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(Model.Reason))
+        {
+            ShowValidation = true;
+            return;
+        }
+
+        await OnConfirm.InvokeAsync(Model);
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleCancel()
+    {
+        ShowValidation = false;
+        await OnCancel.InvokeAsync();
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

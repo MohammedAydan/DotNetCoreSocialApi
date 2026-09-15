@@ -1,0 +1,74 @@
+@namespace Social.Admin.Web.Components.Layout
+
+<aside class="admin-sidebar @(IsCollapsed ? "collapsed" : "")">
+    <div class="sidebar-brand">
+        <div class="brand-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        </div>
+        @if (!IsCollapsed)
+        {
+            <div class="brand-text">
+                <span class="brand-title">Social Admin</span>
+                <span class="brand-badge">PRO</span>
+            </div>
+        }
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-title">@(IsCollapsed ? "•••" : "MANAGEMENT")</div>
+        
+        <button class="nav-item @(ActiveTab == "overview" ? "active" : "")" @onclick='() => OnTabSelected("overview")'>
+            <span class="nav-icon">📊</span>
+            @if (!IsCollapsed) { <span class="nav-label">Overview & Metrics</span> }
+        </button>
+
+        <button class="nav-item @(ActiveTab == "users" ? "active" : "")" @onclick='() => OnTabSelected("users")'>
+            <span class="nav-icon">👥</span>
+            @if (!IsCollapsed) { <span class="nav-label">User Management</span> }
+        </button>
+
+        <button class="nav-item @(ActiveTab == "moderation" ? "active" : "")" @onclick='() => OnTabSelected("moderation")'>
+            <span class="nav-icon">🛡️</span>
+            @if (!IsCollapsed) { <span class="nav-label">Content Moderation</span> }
+        </button>
+
+        <div class="nav-section-title">@(IsCollapsed ? "•••" : "SECURITY & HEALTH")</div>
+
+        <button class="nav-item @(ActiveTab == "audit" ? "active" : "")" @onclick='() => OnTabSelected("audit")'>
+            <span class="nav-icon">📜</span>
+            @if (!IsCollapsed) { <span class="nav-label">Audit Logs</span> }
+        </button>
+
+        <button class="nav-item @(ActiveTab == "diagnostics" ? "active" : "")" @onclick='() => OnTabSelected("diagnostics")'>
+            <span class="nav-icon">⚡</span>
+            @if (!IsCollapsed) { <span class="nav-label">System Diagnostics</span> }
+        </button>
+    </nav>
+
+    <div class="sidebar-footer">
+        <button class="collapse-toggle" @onclick="ToggleCollapse" title="@(IsCollapsed ? "Expand" : "Collapse")">
+            <span class="toggle-icon">@(IsCollapsed ? "❯" : "❮")</span>
+            @if (!IsCollapsed) { <span class="toggle-text">Collapse Menu</span> }
+        </button>
+    </div>
+</aside>
+
+@code {
+    [Parameter] public string ActiveTab { get; set; } = "overview";
+    [Parameter] public EventCallback<string> ActiveTabChanged { get; set; }
+
+    private bool IsCollapsed { get; set; } = false;
+
+    private async Task OnTabSelected(string tab)
+    {
+        ActiveTab = tab;
+        await ActiveTabChanged.InvokeAsync(tab);
+    }
+
+    private void ToggleCollapse()
+    {
+        IsCollapsed = !IsCollapsed;
+    }
+}
