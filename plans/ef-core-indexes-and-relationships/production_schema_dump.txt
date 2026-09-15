@@ -1,6 +1,6 @@
 === PRODUCTION DATABASE SCHEMA DUMP ===
 Database: db18830
-Timestamp UTC: 2026-09-15 20:16:04
+Timestamp UTC: 2026-09-15 21:16:10
 
 --- __EFMigrationsHistory ---
 Migration: 20250517213954_InitialMigration | ProductVersion: 9.0.4
@@ -61,7 +61,7 @@ CREATE TABLE `refreshtokens` (
   UNIQUE KEY `IX_RefreshTokens_Token` (`Token`),
   KEY `FK_RefreshTokens_AspNetUsers_UserId` (`UserId`),
   CONSTRAINT `FK_RefreshTokens_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4259 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+) ENGINE=InnoDB AUTO_INCREMENT=4265 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 
 --- SHOW CREATE TABLE Likes ---
 CREATE TABLE `likes` (
