@@ -88,6 +88,14 @@ namespace Social.Infrastructure
             builder.Services.AddScoped<ISystemMetricsService, Social.Infrastructure.Diagnostics.SystemMetricsService>();
             builder.Services.AddScoped<IDatabaseSeeder, Social.Infrastructure.Services.DatabaseSeeder>();
 
+            // Telemetry & analytics pipeline (backend-only; no frontend SDK).
+            builder.Services.AddSingleton<Social.Infrastructure.Telemetry.RequestLogChannel>();
+            builder.Services.AddSingleton<IRequestLogSink>(sp =>
+                sp.GetRequiredService<Social.Infrastructure.Telemetry.RequestLogChannel>());
+            builder.Services.AddHostedService<Social.Infrastructure.Telemetry.RequestLogFlushWorker>();
+            builder.Services.AddHostedService<Social.Infrastructure.Telemetry.MetricsAggregationWorker>();
+            builder.Services.AddScoped<IAnalyticsService, Social.Infrastructure.Services.AnalyticsService>();
+
             // email services
             builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
             builder.Services.AddTransient<IEmailRepository, EmailRepository>();

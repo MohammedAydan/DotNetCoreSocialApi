@@ -145,7 +145,7 @@ namespace Social.Tests.Integration.Admin
         [InlineData("/admin/users", "User & Identity Directory")]
         [InlineData("/admin/moderation", "Centralized Content Moderation")]
         [InlineData("/admin/audit-logs", "Administrative Audit Trail")]
-        [InlineData("/admin/diagnostics", "System Diagnostics & Cache Health")]
+        [InlineData("/admin/diagnostics", "System Observability & API Health")]
         public async Task GetDedicatedAdminRoutes_WithAdminCookie_ReturnsOkAndRendersSpecificPage(string route, string expectedTitle)
         {
             // Arrange

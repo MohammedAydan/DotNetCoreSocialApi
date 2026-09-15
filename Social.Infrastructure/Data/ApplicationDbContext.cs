@@ -19,6 +19,8 @@ namespace Social.Infrastructure.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<BlockUser> BlockUsers { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<RequestLog> RequestLogs { get; set; }
+        public DbSet<DailyMetricSnapshot> DailyMetricSnapshots { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -322,6 +324,41 @@ namespace Social.Infrastructure.Data
                     .WithMany()
                     .HasForeignKey(p => p.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // =========================================================
+            // 7c. REQUEST TELEMETRY (append-only API request logs)
+            // NOTE: Admin-action AuditLog is intentionally untouched (string
+            // GUID PK, moderation semantics). Telemetry lives here in the
+            // high-volume RequestLogs table with range-scan indexes.
+            // =========================================================
+            modelBuilder.Entity<RequestLog>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+
+                entity.Property(r => r.UserId).HasMaxLength(255);
+                entity.Property(r => r.Endpoint).HasMaxLength(255).IsRequired();
+                entity.Property(r => r.HttpMethod).HasMaxLength(10).IsRequired();
+                entity.Property(r => r.IpAddress).HasMaxLength(45);
+                entity.Property(r => r.UserAgent).HasMaxLength(512);
+
+                // Time-range scans (retention + aggregation windows).
+                entity.HasIndex(r => r.CreatedAt);
+                entity.HasIndex(r => r.UserId);
+                entity.HasIndex(r => r.Endpoint);
+                entity.HasIndex(r => r.StatusCode);
+                entity.HasIndex(r => new { r.CreatedAt, r.StatusCode });
+                entity.HasIndex(r => new { r.Endpoint, r.CreatedAt });
+            });
+
+            // =========================================================
+            // 7d. DAILY METRIC SNAPSHOTS (one row per UTC day)
+            // =========================================================
+            modelBuilder.Entity<DailyMetricSnapshot>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+
+                entity.HasIndex(s => s.Date).IsUnique();
             });
 
             // =========================================================

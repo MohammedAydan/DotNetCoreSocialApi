@@ -771,4 +771,23 @@ Deploy API binaries to production to activate bans/blocks enforcement. Likes/com
 Migration `AddNotificationIntelligence` is additive-only but NOT applied to production — run `dotnet ef database update` with explicit human approval. Then deploy API binaries. Follow-ups (out of scope): email/push delivery, retention cleanup job, admin broadcast.
 ---
 
+## Session: 2026-09-16 (enterprise-analytics)
+### What was done
+- Backend telemetry: `RequestLog` + `DailyMetricSnapshot` entities, `RequestTelemetryMiddleware` (Channel, 5s flush), `MetricsAggregationWorker` (00:05 UTC, backfill), `IAnalyticsService` + 6 queries + 6 controller routes, migration `AddTelemetryAndDailyMetrics` (additive, prod NOT updated).
+- Dashboard overhaul: enterprise tokens + light/dark, AdminShell (env badge, heartbeat, range switcher, Cmd+K, grouped collapsible sidebar), Executive/System/Users pages wired to new endpoints (Chart.js + fallbacks), aliases `/admin/dashboard` + `/admin/system`.
+- Tests: 28 new (math/range, middleware, SQLite service); updated 2 legacy title assertions; full suite 242/242 passing; build 0 errors.
+
+### Decisions made
+- ADR-011: kept `AuditLog` untouched (new `RequestLog` instead); snapshot-first reads; polling not WebSocket; string-HTML shell upgraded (Blazor tree stays dead code).
+
+### Files changed
+- New: `Social.Core/Entities/RequestLog.cs`, `DailyMetricSnapshot.cs`, `Social.Core/Analytics/AnalyticsDtos.cs`, `Social.Core/Interfaces/IAnalyticsService.cs`, `IRequestLogSink.cs`, `Social.Infrastructure/Telemetry/*` (3), `Social.Infrastructure/Services/AnalyticsService.cs`, `Social/Middlewares/RequestTelemetryMiddleware.cs`, `Social.Application/.../GetEnterpriseAnalyticsQueries.cs`, migration `AddTelemetryAndDailyMetrics`, `Social.Tests/Unit/Analytics/EnterpriseAnalyticsTests.cs`, `plans/enterprise-analytics/*`
+- Modified: `ApplicationDbContext.cs`, `DependencyInjection.cs` (infra), `Program.cs`, `AdminAnalyticsController.cs`, `AdminDashboardController.cs`, `admin-dashboard.css`, 2 legacy test files, `DECISIONS.md`, `TECH_STACK.md`, `context.md`
+
+### State at end of session
+- Active feature: enterprise-analytics (implemented, review written)
+- Next: human approval → `dotnet ef database update` (2 pending migrations) → deploy binaries → verify /admin/dashboard live
+- Blockers: None
+---
+
 

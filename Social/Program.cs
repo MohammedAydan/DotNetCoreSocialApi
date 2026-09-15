@@ -138,6 +138,9 @@ app.UseAuthorization();
 // Token blacklist middleware
 app.UseMiddleware<TokenBlacklistMiddleware>();
 
+// Backend-only request telemetry (Channel + 5s batch flush; never blocks responses)
+app.UseMiddleware<RequestTelemetryMiddleware>();
+
 // app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), appBuilder =>
 // {
 //     appBuilder.UseMiddleware<AuthEndpoints>();

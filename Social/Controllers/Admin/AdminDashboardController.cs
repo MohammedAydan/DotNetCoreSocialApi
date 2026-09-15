@@ -33,6 +33,7 @@ namespace Social.API.Controllers.Admin
 
         [HttpGet("")]
         [HttpGet("overview")]
+        [HttpGet("dashboard")]
         public IActionResult Index() => RenderDashboard("overview");
 
         [HttpGet("users")]
@@ -46,6 +47,7 @@ namespace Social.API.Controllers.Admin
         public IActionResult AuditLogs() => RenderDashboard("audit");
 
         [HttpGet("diagnostics")]
+        [HttpGet("system")]
         public IActionResult Diagnostics() => RenderDashboard("diagnostics");
 
         private IActionResult RenderDashboard(string activePage)
@@ -318,7 +320,7 @@ namespace Social.API.Controllers.Admin
                 "users" => "User & Identity Directory",
                 "moderation" => "Centralized Content Moderation",
                 "audit" => "Administrative Audit Trail",
-                "diagnostics" => "System Diagnostics & Cache Health",
+                "diagnostics" => "System Observability & API Health",
                 _ => "Platform Overview & Real-Time Analytics"
             };
 
@@ -329,30 +331,54 @@ namespace Social.API.Controllers.Admin
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}} - Social Admin Console</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/_content/Social.Admin.Web/css/admin-dashboard.css">
     <style>
         :root {
-            --bg-base: #0b0f19;
-            --bg-surface: #111827;
-            --bg-card: #1f2937;
-            --bg-card-hover: #374151;
-            --border-normal: #374151;
-            --border-subtle: #1f2937;
-            --text-primary: #f9fafb;
-            --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
-            --accent-blue: #3b82f6;
-            --accent-blue-hover: #2563eb;
-            --accent-emerald: #10b981;
+            --bg-base: #09090b;
+            --bg-surface: #101014;
+            --bg-card: #18181d;
+            --bg-card-hover: #222229;
+            --border: rgba(255, 255, 255, 0.09);
+            --border-normal: rgba(255, 255, 255, 0.09);
+            --border-subtle: rgba(255, 255, 255, 0.055);
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #63636b;
+            --brand: #4f46e5;
+            --brand-hover: #4338ca;
+            --growth: #0d9488;
+            --alert: #e11d48;
+            --accent-blue: #4f46e5;
+            --accent-blue-hover: #4338ca;
+            --accent-emerald: #0d9488;
             --accent-amber: #f59e0b;
-            --accent-rose: #f43f5e;
+            --accent-rose: #e11d48;
             --accent-indigo: #6366f1;
             --accent-cyan: #06b6d4;
             --accent-purple: #8b5cf6;
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.35);
         }
+        [data-theme="light"] {
+            --bg-base: #fafafa;
+            --bg-surface: #ffffff;
+            --bg-card: #f4f4f5;
+            --bg-card-hover: #e9e9ec;
+            --border: rgba(9, 9, 11, 0.1);
+            --border-normal: rgba(9, 9, 11, 0.12);
+            --border-subtle: rgba(9, 9, 11, 0.06);
+            --text-primary: #09090b;
+            --text-secondary: #52525b;
+            --text-muted: #a1a1aa;
+            --shadow-xs: 0 1px 2px rgba(9, 9, 11, 0.06);
+            --shadow-sm: 0 1px 3px rgba(9, 9, 11, 0.08), 0 1px 2px rgba(9, 9, 11, 0.06);
+        }
+        html { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
+        .metric-value, .admin-data-table td, .kpi-value, .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1, "cv02", "cv03"; letter-spacing: -0.01em; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-base); color: var(--text-primary); min-height: 100vh; display: flex; flex-direction: column; }
         .admin-shell { display: flex; min-height: 100vh; }
@@ -472,6 +498,63 @@ namespace Social.API.Controllers.Admin
         .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
         .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
         .toast { background: var(--bg-surface); border: 1px solid var(--border-normal); padding: 0.75rem 1.25rem; border-radius: 8px; color: var(--text-primary); font-size: 0.85rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 0.75rem; animation: slideIn 0.2s ease-out; }
+        /* Enterprise Analytics Layer: KPI ribbon, charts, shell widgets */
+        .admin-shell.sidebar-collapsed .admin-sidebar { width: 64px; }
+        .admin-shell.sidebar-collapsed .admin-sidebar .brand-title,
+        .admin-shell.sidebar-collapsed .admin-sidebar .brand-badge,
+        .admin-shell.sidebar-collapsed .admin-sidebar .nav-section-title,
+        .admin-shell.sidebar-collapsed .admin-sidebar .nav-item span:last-child { display: none; }
+        .env-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; color: #0d9488; background: rgba(13, 148, 136, 0.12); border: 1px solid rgba(13, 148, 136, 0.35); padding: 0.2rem 0.55rem; border-radius: 9999px; }
+        .env-badge.degraded { color: #e11d48; background: rgba(225, 29, 72, 0.12); border-color: rgba(225, 29, 72, 0.35); }
+        .range-switcher { display: flex; background: var(--bg-card); border: 1px solid var(--border-normal); border-radius: 8px; padding: 2px; gap: 2px; }
+        .range-btn { background: none; border: none; color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.65rem; border-radius: 6px; cursor: pointer; }
+        .range-btn.active { background: var(--brand); color: #fff; }
+        .cmdk-btn { background: var(--bg-card); border: 1px solid var(--border-normal); color: var(--text-secondary); padding: 0.4rem 0.7rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
+        .cmdk-hint { color: var(--text-muted); }
+        .theme-btn { background: var(--bg-card); border: 1px solid var(--border-normal); color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; }
+        .profile-menu { display: none; position: absolute; right: 0; top: 44px; background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 10px; min-width: 180px; box-shadow: var(--shadow-sm); z-index: 50; overflow: hidden; }
+        .profile-menu.open { display: block; }
+        .profile-menu a { display: block; padding: 0.65rem 1rem; font-size: 0.82rem; color: var(--text-secondary); text-decoration: none; }
+        .profile-menu a:hover { background: var(--bg-card); color: var(--text-primary); }
+        .cmdk-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); z-index: 100; justify-content: center; padding-top: 12vh; }
+        .cmdk-backdrop.open { display: flex; }
+        .cmdk-dialog { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 12px; width: min(560px, 92vw); height: fit-content; max-height: 60vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
+        .cmdk-dialog .form-control { border: none; border-bottom: 1px solid var(--border-normal); border-radius: 0; padding: 0.9rem 1.1rem; width: 100%; }
+        .cmdk-item { padding: 0.7rem 1.1rem; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; display: flex; justify-content: space-between; }
+        .cmdk-item:hover { background: var(--bg-card); color: var(--text-primary); }
+        .kpi-ribbon { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .kpi-card { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 12px; padding: 1.25rem 1.5rem; box-shadow: var(--shadow-xs); transition: border-color 0.15s ease, transform 0.15s ease; }
+        .kpi-card:hover { border-color: rgba(79, 70, 229, 0.55); transform: translateY(-1px); }
+        .kpi-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+        .kpi-value { font-size: 1.9rem; font-weight: 700; margin: 0.25rem 0; font-family: 'Inter', system-ui, sans-serif; }
+        .kpi-delta { font-size: 0.75rem; font-weight: 600; }
+        .kpi-delta.up { color: var(--growth); }
+        .kpi-delta.down { color: var(--alert); }
+        .kpi-delta.flat { color: var(--text-muted); }
+        .kpi-spark { margin-top: 0.5rem; opacity: 0.9; }
+        .chart-grid { display: grid; grid-template-columns: 65% 35%; gap: 1rem; margin-bottom: 1.5rem; }
+        @media (max-width: 1024px) { .chart-grid { grid-template-columns: 1fr; } }
+        .chart-box { position: relative; height: 280px; }
+        .chart-box canvas { max-height: 280px; }
+        .latency-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .latency-cell { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0.9rem 1rem; }
+        .latency-cell .kpi-value { font-size: 1.4rem; }
+        .method-badge { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 5px; letter-spacing: 0.03em; }
+        .method-GET { background: rgba(13, 148, 136, 0.15); color: #14b8a6; }
+        .method-POST { background: rgba(79, 70, 229, 0.16); color: #818cf8; }
+        .method-PUT, .method-PATCH { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .method-DELETE { background: rgba(225, 29, 72, 0.15); color: #fb7185; }
+        .privacy-meter { height: 12px; border-radius: 9999px; overflow: hidden; display: flex; background: var(--bg-card); border: 1px solid var(--border-subtle); }
+        .privacy-meter .seg-private { background: linear-gradient(90deg, #4f46e5, #818cf8); }
+        .privacy-meter .seg-public { background: rgba(13, 148, 136, 0.7); }
+        .table-wrap { overflow-x: auto; }
+        .panel-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: -0.75rem; margin-bottom: 1rem; }
+        @media (max-width: 768px) {
+            .admin-sidebar { position: fixed; z-index: 60; height: 100vh; transform: translateX(0); }
+            .admin-shell.sidebar-collapsed .admin-sidebar { transform: translateX(-100%); width: 260px; }
+            .admin-content-area { padding: 1rem; }
+            .navbar-right .cmdk-hint, .navbar-right .btn-openapi { display: none; }
+        }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
@@ -483,51 +566,90 @@ namespace Social.API.Controllers.Admin
                 <span class="brand-title">Social Admin</span>
                 <span class="brand-badge">PRO</span>
             </a>
-            <nav class="sidebar-nav">
-                <div class="nav-section-title">MANAGEMENT</div>
-                <a href="/admin" id="nav-overview" class="nav-item {{activeOverview}}" onclick="navigateTab(event, 'overview', '/admin')">
+            <nav class="sidebar-nav" id="admin-sidebar-nav">
+                <div class="nav-section-title">EXECUTIVE</div>
+                <a href="/admin/dashboard" id="nav-overview" class="nav-item {{activeOverview}}" onclick="navigateTab(event, 'overview', '/admin/dashboard')">
                     <span class="nav-icon">📊</span>
-                    <span>Overview & Metrics</span>
+                    <span>Overview</span>
                 </a>
+                <a href="/admin/dashboard" id="nav-traffic" class="nav-item" onclick="navigateTab(event, 'overview', '/admin/dashboard');setTimeout(()=>document.getElementById('exec-anomalies')?.scrollIntoView({behavior:'smooth'}),150);return false;">
+                    <span class="nav-icon">📡</span>
+                    <span>Live Traffic</span>
+                </a>
+                <div class="nav-section-title">AUDIENCE</div>
                 <a href="/admin/users" id="nav-users" class="nav-item {{activeUsers}}" onclick="navigateTab(event, 'users', '/admin/users')">
                     <span class="nav-icon">👥</span>
-                    <span>User Management</span>
+                    <span>User Intelligence</span>
+                </a>
+                <a href="/admin/users" id="nav-cohorts" class="nav-item" onclick="navigateTab(event, 'users', '/admin/users');setTimeout(()=>document.getElementById('users-growth-panel')?.scrollIntoView({behavior:'smooth'}),150);return false;">
+                    <span class="nav-icon">🌱</span>
+                    <span>Growth & Cohorts</span>
+                </a>
+                <div class="nav-section-title">CONTENT</div>
+                <a href="/admin/dashboard" id="nav-velocity" class="nav-item" onclick="navigateTab(event, 'overview', '/admin/dashboard');setTimeout(()=>document.getElementById('exec-trend-panel')?.scrollIntoView({behavior:'smooth'}),150);return false;">
+                    <span class="nav-icon">🚀</span>
+                    <span>Platform Velocity</span>
                 </a>
                 <a href="/admin/moderation" id="nav-moderation" class="nav-item {{activeModeration}}" onclick="navigateTab(event, 'moderation', '/admin/moderation')">
                     <span class="nav-icon">🛡️</span>
-                    <span>Content Moderation</span>
+                    <span>Moderation & Safety</span>
                 </a>
-                <div class="nav-section-title">SECURITY & HEALTH</div>
+                <div class="nav-section-title">INFRASTRUCTURE</div>
+                <a href="/admin/system" id="nav-diagnostics" class="nav-item {{activeDiagnostics}}" onclick="navigateTab(event, 'diagnostics', '/admin/system')">
+                    <span class="nav-icon">⚡</span>
+                    <span>API Observability</span>
+                </a>
                 <a href="/admin/audit-logs" id="nav-audit" class="nav-item {{activeAudit}}" onclick="navigateTab(event, 'audit', '/admin/audit-logs')">
                     <span class="nav-icon">📜</span>
-                    <span>Audit Logs</span>
+                    <span>Audit Trail</span>
                 </a>
-                <a href="/admin/diagnostics" id="nav-diagnostics" class="nav-item {{activeDiagnostics}}" onclick="navigateTab(event, 'diagnostics', '/admin/diagnostics')">
-                    <span class="nav-icon">⚡</span>
-                    <span>System Diagnostics</span>
+                <a href="/admin/system" id="nav-health" class="nav-item" onclick="navigateTab(event, 'diagnostics', '/admin/system');setTimeout(()=>document.getElementById('sys-latency-panel')?.scrollIntoView({behavior:'smooth'}),150);return false;">
+                    <span class="nav-icon">💚</span>
+                    <span>System Health</span>
                 </a>
             </nav>
+            <div style="padding:0.75rem; border-top:1px solid var(--border-subtle);">
+                <button class="btn btn-secondary" style="width:100%;" onclick="document.querySelector('.admin-shell').classList.toggle('sidebar-collapsed')" title="Collapse sidebar">⇔ Collapse</button>
+            </div>
         </aside>
         <div class="admin-main-wrapper">
             <header class="admin-navbar">
                 <div class="navbar-left">
                     <h1 class="page-title" id="page-title-heading">{{title}}</h1>
-                    <span class="live-indicator">
-                        <span class="pulse-dot"></span>
-                        System Live
+                    <span class="env-badge" id="env-badge" title="Deployment environment">PRODUCTION</span>
+                    <span class="live-indicator" id="health-heartbeat" title="Cluster health (polls diagnostics every 30s)">
+                        <span class="pulse-dot" id="health-dot"></span>
+                        <span id="health-text">Checking…</span>
                     </span>
                 </div>
                 <div class="navbar-right">
-                    <div class="admin-profile">
-                        <div class="avatar-circle">AD</div>
+                    <div class="range-switcher" role="group" aria-label="Analytics range">
+                        <button class="range-btn" data-range="today" onclick="setAdminRange('today')">Today</button>
+                        <button class="range-btn active" data-range="7d" onclick="setAdminRange('7d')">7D</button>
+                        <button class="range-btn" data-range="30d" onclick="setAdminRange('30d')">30D</button>
+                    </div>
+                    <button class="cmdk-btn" onclick="openCommandPalette()" title="Global command palette (Ctrl/⌘ + K)">⌘K <span class="cmdk-hint">Search…</span></button>
+                    <button class="theme-btn" onclick="toggleAdminTheme()" title="Toggle light / dark">◐</button>
+                    <div class="admin-profile" style="position:relative;">
+                        <button class="avatar-circle" onclick="document.getElementById('profile-menu').classList.toggle('open')" style="border:none; cursor:pointer;" id="profile-avatar-btn">AD</button>
                         <div>
                             <div class="profile-name">{{adminEmail}}</div>
                             <div class="profile-role">Platform Administrator</div>
                         </div>
+                        <div class="profile-menu" id="profile-menu">
+                            <a href="/openapi/v1.json" target="_blank">📄 API Docs</a>
+                            <a href="/admin/logout">⏻ Sign Out</a>
+                        </div>
                     </div>
                     <a href="/openapi/v1.json" target="_blank" class="btn-openapi">API Docs</a>
-                    <a href="/admin/logout" class="btn btn-secondary" style="font-size:0.75rem; padding:0.4rem 0.8rem; text-decoration:none; color:var(--text-secondary);">Sign Out</a>
                 </div>
+            </header>
+            <div class="cmdk-backdrop" id="cmdk-backdrop" onclick="closeCommandPalette()">
+                <div class="cmdk-dialog" onclick="event.stopPropagation()">
+                    <input type="text" id="cmdk-input" class="form-control" placeholder="Type a command or destination…" oninput="filterCommandPalette()" autocomplete="off" />
+                    <div id="cmdk-results"></div>
+                </div>
+            </div>
             </header>
             <main class="admin-content-area">
                 <!-- Overview Tab -->
@@ -564,6 +686,61 @@ namespace Social.API.Controllers.Admin
                             <div class="metric-subtitle">Working set</div>
                         </div>
                     </div>
+                    <!-- Enterprise KPI Ribbon -->
+                    <div class="kpi-ribbon">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Daily Active Users</div>
+                            <div class="kpi-value" id="kpi-dau">--</div>
+                            <div class="kpi-delta flat" id="kpi-dau-delta">vs yesterday: --</div>
+                            <div class="kpi-spark" id="spark-dau"></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">New Accounts</div>
+                            <div class="kpi-value" id="kpi-new">--</div>
+                            <div class="kpi-delta flat" id="kpi-new-delta">growth velocity: --</div>
+                            <div class="kpi-spark" id="spark-new"></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Interaction Volume</div>
+                            <div class="kpi-value" id="kpi-interactions">--</div>
+                            <div class="kpi-delta flat" id="kpi-engagement">engagement: --</div>
+                            <div class="kpi-spark" id="spark-interact"></div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">API Health · P95</div>
+                            <div class="kpi-value" id="kpi-p95">--</div>
+                            <div class="kpi-delta flat" id="kpi-err">error rate: --</div>
+                            <div class="kpi-spark" id="spark-err"></div>
+                        </div>
+                    </div>
+                    <div class="chart-grid" id="exec-trend-panel">
+                        <div class="panel-card" style="margin-bottom:0;">
+                            <div class="panel-header">
+                                <h2 class="panel-title">DAU vs Content Creation</h2>
+                                <span class="status-badge badge-info" id="exec-trend-range">Last 30 days</span>
+                            </div>
+                            <div class="chart-box"><canvas id="exec-trend"></canvas></div>
+                        </div>
+                        <div class="panel-card" style="margin-bottom:0;">
+                            <div class="panel-header"><h2 class="panel-title">Content Mix</h2></div>
+                            <div class="chart-box"><canvas id="exec-donut"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="panel-card" id="exec-anomalies">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Recent Platform Anomalies</h2>
+                            <button class="btn btn-secondary" onclick="loadExecutive()">&#8635; Refresh</button>
+                        </div>
+                        <p class="panel-sub">Live 5xx-heavy endpoints and block spikes from the telemetry pipeline.</p>
+                        <div class="table-wrap">
+                        <table class="admin-data-table">
+                            <thead><tr><th>Signal</th><th>Detail</th><th>Volume</th><th>Severity</th></tr></thead>
+                            <tbody id="anomalies-body">
+                                <tr><td colspan="4" style="text-align:center;">Loading anomaly stream…</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
                     <div class="panel-card">
                         <div class="panel-header">
                             <h2 class="panel-title">System & Cache Status</h2>
@@ -585,6 +762,40 @@ namespace Social.API.Controllers.Admin
                             <button class="btn btn-primary" onclick="searchUsers()">Search</button>
                         </div>
                         <button class="btn btn-secondary" onclick="resetUserSearch()">Reset</button>
+                    </div>
+                    <div class="panel-card" id="users-growth-panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">User Growth & Retention</h2>
+                            <span class="status-badge badge-info" id="users-growth-meta">--</span>
+                        </div>
+                        <p class="panel-sub">New signups vs telemetry-active users. Bars render client-side, paginated server-side.</p>
+                        <div class="chart-box" style="height:240px;"><canvas id="users-growth-chart"></canvas></div>
+                    </div>
+                    <div class="chart-grid">
+                        <div class="panel-card" style="margin-bottom:0;">
+                            <div class="panel-header"><h2 class="panel-title">Account Privacy Ratio</h2></div>
+                            <div class="privacy-meter" id="privacy-meter">
+                                <div class="seg-private" id="privacy-private-seg" style="width:50%;"></div>
+                                <div class="seg-public" id="privacy-public-seg" style="width:50%;"></div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-top:0.6rem; font-size:0.82rem;">
+                                <span>🔒 Private <strong class="tnum" id="privacy-private-n">--</strong></span>
+                                <span>🌍 Public <strong class="tnum" id="privacy-public-n">--</strong></span>
+                                <span class="status-badge badge-info tnum" id="privacy-ratio">--</span>
+                            </div>
+                        </div>
+                        <div class="panel-card" style="margin-bottom:0;">
+                            <div class="panel-header"><h2 class="panel-title">Block Network Density</h2></div>
+                            <p class="panel-sub">Most-blocked accounts — potential bad actors or spam vectors.</p>
+                            <div class="table-wrap">
+                            <table class="admin-data-table">
+                                <thead><tr><th>Account</th><th>Blocks</th><th style="text-align:right;">Action</th></tr></thead>
+                                <tbody id="topblocked-body">
+                                    <tr><td colspan="3" style="text-align:center;">Loading block graph…</td></tr>
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
                     </div>
                     <div class="panel-card">
                         <table class="admin-data-table">
@@ -730,6 +941,63 @@ namespace Social.API.Controllers.Admin
                         <div class="metric-card">
                             <div class="metric-header"><span class="metric-title">Framework</span><span>⚡</span></div>
                             <div class="metric-value" style="font-size:1.2rem;">.NET 9.0</div>
+                        </div>
+                    </div>
+                    <div class="panel-card" id="sys-latency-panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Latency Distribution · last 24h</h2>
+                            <span class="status-badge badge-info tnum" id="sys-req-count">-- requests</span>
+                        </div>
+                        <div class="latency-grid">
+                            <div class="latency-cell"><div class="kpi-label">P50</div><div class="kpi-value" id="lat-p50">--</div></div>
+                            <div class="latency-cell"><div class="kpi-label">P90</div><div class="kpi-value" id="lat-p90">--</div></div>
+                            <div class="latency-cell"><div class="kpi-label">P95</div><div class="kpi-value" id="lat-p95">--</div></div>
+                            <div class="latency-cell"><div class="kpi-label">P99</div><div class="kpi-value" id="lat-p99">--</div></div>
+                        </div>
+                        <div style="display:flex; gap:1.25rem; flex-wrap:wrap; font-size:0.82rem;">
+                            <span><strong class="tnum" id="sys-2xx">--</strong> <span class="status-badge badge-success">2xx</span></span>
+                            <span><strong class="tnum" id="sys-4xx">--</strong> <span class="status-badge badge-warning">4xx</span></span>
+                            <span><strong class="tnum" id="sys-5xx">--</strong> <span class="status-badge badge-danger">5xx</span></span>
+                        </div>
+                    </div>
+                    <div class="panel-card">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Top Endpoints Matrix</h2>
+                            <button class="btn btn-secondary" onclick="loadSystemObservability()">&#8635; Refresh</button>
+                        </div>
+                        <p class="panel-sub">Sortable by requests, latency, or error rate. Telemetry-backed, 24h window.</p>
+                        <div class="table-wrap">
+                        <table class="admin-data-table" id="endpoints-matrix">
+                            <thead><tr>
+                                <th>Method</th>
+                                <th><a href="#" onclick="sortEndpoints('endpoint');return false;" style="color:inherit;">Route</a></th>
+                                <th><a href="#" onclick="sortEndpoints('requests');return false;" style="color:inherit;">Requests ⇅</a></th>
+                                <th><a href="#" onclick="sortEndpoints('avg');return false;" style="color:inherit;">Avg Duration ⇅</a></th>
+                                <th><a href="#" onclick="sortEndpoints('err');return false;" style="color:inherit;">Error % ⇅</a></th>
+                                <th>Trend</th>
+                            </tr></thead>
+                            <tbody id="endpoints-body">
+                                <tr><td colspan="6" style="text-align:center;">Loading endpoint telemetry…</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                    <div class="panel-card">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Recent Audit Log Stream</h2>
+                            <div style="display:flex; gap:0.5rem;">
+                                <input type="text" id="sys-audit-filter" class="form-control" style="max-width:220px;" placeholder="Filter endpoint / status / IP…" oninput="renderSysAuditStream()" />
+                                <button class="btn btn-secondary" onclick="loadSysAuditStream()">&#8635; Live</button>
+                            </div>
+                        </div>
+                        <p class="panel-sub">Auto-refreshes every 15s while this tab is visible.</p>
+                        <div class="table-wrap">
+                        <table class="admin-data-table">
+                            <thead><tr><th>Time (UTC)</th><th>Method</th><th>Endpoint</th><th>Status</th><th>Latency</th><th>User</th><th>IP</th></tr></thead>
+                            <tbody id="sys-audit-body">
+                                <tr><td colspan="7" style="text-align:center;">Waiting for telemetry…</td></tr>
+                            </tbody>
+                        </table>
                         </div>
                     </div>
                     <div class="panel-card">
@@ -1071,7 +1339,8 @@ namespace Social.API.Controllers.Admin
             if (path.endsWith('/users')) showTab('users', false);
             else if (path.endsWith('/moderation')) showTab('moderation', false);
             else if (path.endsWith('/audit-logs') || path.endsWith('/audit')) showTab('audit', false);
-            else if (path.endsWith('/diagnostics')) showTab('diagnostics', false);
+            else if (path.endsWith('/diagnostics') || path.endsWith('/system')) showTab('diagnostics', false);
+            else if (path.endsWith('/dashboard')) showTab('overview', false);
             else showTab('overview', false);
         });
 
@@ -1089,27 +1358,192 @@ namespace Social.API.Controllers.Admin
                 users: 'User & Identity Directory',
                 moderation: 'Centralized Content Moderation',
                 audit: 'Administrative Audit Trail',
-                diagnostics: 'System Diagnostics & Cache Health'
+                diagnostics: 'System Observability & API Health'
             };
             document.getElementById('page-title-heading').innerText = titles[tabName] || 'Admin Console';
             document.title = (titles[tabName] || 'Admin Console') + ' - Social Admin Console';
 
             if (updateUrl) {
                 const urls = {
-                    overview: '/admin',
+                    overview: '/admin/dashboard',
                     users: '/admin/users',
                     moderation: '/admin/moderation',
                     audit: '/admin/audit-logs',
-                    diagnostics: '/admin/diagnostics'
+                    diagnostics: '/admin/system'
                 };
                 window.history.pushState({ tab: tabName }, '', urls[tabName] || '/admin');
             }
 
-            if (tabName === 'overview') loadOverview();
-            if (tabName === 'users') loadUsers();
+            if (tabName === 'overview') { loadOverview(); loadExecutive(); }
+            if (tabName === 'users') { loadUsers(); loadUserIntelligence(); }
             if (tabName === 'moderation') loadModerationFeed();
             if (tabName === 'audit') loadAuditLogs();
-            if (tabName === 'diagnostics') loadDiagnostics();
+            if (tabName === 'diagnostics') { loadDiagnostics(); loadSystemObservability(); startSysAuditPoll(); }
+        }
+
+        /* ---------- Enterprise shell: range, theme, palette, heartbeat ---------- */
+        let adminRange = '7d';
+        let execCharts = {};
+        function setAdminRange(r) {
+            adminRange = r === 'today' ? '7d' : r;
+            document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b.dataset.range === r || (r === 'today' && b.dataset.range === 'today')));
+            if (r === 'today') adminRange = '7d';
+            loadExecutive();
+            loadUserIntelligence();
+        }
+        function toggleAdminTheme() {
+            const root = document.documentElement;
+            const next = root.getAttribute('data-theme') === 'light' ? '' : 'light';
+            if (next) root.setAttribute('data-theme', next); else root.removeAttribute('data-theme');
+            try { localStorage.setItem('admin-theme', next); } catch (e) {}
+        }
+        (function initAdminTheme() {
+            try { if (localStorage.getItem('admin-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}
+        })();
+        const cmdkRoutes = [
+            ['Overview', 'Executive dashboard', 'overview', '/admin/dashboard'],
+            ['Live Traffic', 'Anomaly stream', 'overview', '/admin/dashboard'],
+            ['User Intelligence', 'Directory + safety', 'users', '/admin/users'],
+            ['Growth & Cohorts', 'Signup velocity', 'users', '/admin/users'],
+            ['Platform Velocity', 'Content trends', 'overview', '/admin/dashboard'],
+            ['Moderation & Safety', 'Review queue', 'moderation', '/admin/moderation'],
+            ['API Observability', 'Latency + endpoints', 'diagnostics', '/admin/system'],
+            ['Audit Trail', 'Admin actions', 'audit', '/admin/audit-logs'],
+            ['System Health', 'Process + cache', 'diagnostics', '/admin/system']
+        ];
+        function openCommandPalette() {
+            document.getElementById('cmdk-backdrop').classList.add('open');
+            document.getElementById('cmdk-input').value = '';
+            filterCommandPalette();
+            setTimeout(() => document.getElementById('cmdk-input').focus(), 30);
+        }
+        function closeCommandPalette() { document.getElementById('cmdk-backdrop').classList.remove('open'); }
+        function filterCommandPalette() {
+            const q = (document.getElementById('cmdk-input').value || '').toLowerCase();
+            document.getElementById('cmdk-results').innerHTML = cmdkRoutes
+                .filter(r => (r[0] + ' ' + r[1]).toLowerCase().includes(q))
+                .map(r => `<div class="cmdk-item" onclick="closeCommandPalette();showTab('${r[2]}',true)"><span>◎ ${r[0]}</span><span style="color:var(--text-muted);font-size:0.72rem;">${r[1]}</span></div>`).join('')
+                || '<div class="cmdk-item">No matches</div>';
+        }
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCommandPalette(); }
+            if (e.key === 'Escape') closeCommandPalette();
+        });
+        async function pollHeartbeat() {
+            try {
+                const res = await fetch('/api/admin/analytics/diagnostics');
+                const dot = document.getElementById('health-dot');
+                const txt = document.getElementById('health-text');
+                const badge = document.getElementById('env-badge');
+                if (res.ok) {
+                    const j = await res.json(); const d = j.data || j;
+                    txt.innerText = 'Operational';
+                    dot.style.backgroundColor = 'var(--growth)';
+                    if (badge && d.environmentName) badge.innerText = String(d.environmentName).toUpperCase();
+                    badge?.classList.remove('degraded');
+                } else {
+                    txt.innerText = 'Degraded'; dot.style.backgroundColor = 'var(--alert)';
+                    badge?.classList.add('degraded');
+                }
+            } catch (e) {
+                document.getElementById('health-text').innerText = 'Unreachable';
+            }
+        }
+        setInterval(pollHeartbeat, 30000);
+
+        /* ---------- Enterprise helpers ---------- */
+        async function api(path) {
+            const res = await fetch(path);
+            if (!res.ok) throw new Error(path + ' -> ' + res.status);
+            const json = await res.json();
+            return json.data || json;
+        }
+        function sparklineSVG(values, color) {
+            if (!values || values.length < 2) return '';
+            const w = 120, h = 28, max = Math.max(...values, 1), min = Math.min(...values, 0);
+            const span = (max - min) || 1;
+            const pts = values.map((v, i) => `${(i / (values.length - 1) * w).toFixed(1)},${(h - 2 - ((v - min) / span) * (h - 4)).toFixed(1)}`).join(' ');
+            return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+        }
+        function setDelta(id, pct, invert) {
+            const el = document.getElementById(id);
+            const good = invert ? pct < 0 : pct > 0;
+            el.className = 'kpi-delta ' + (Math.abs(pct) < 0.005 ? 'flat' : (good ? 'up' : 'down'));
+            const arrow = Math.abs(pct) < 0.005 ? '→' : (pct > 0 ? '▲' : '▼');
+            el.innerText = `${arrow} ${Math.abs(pct).toFixed(1)}%`;
+        }
+        function chartOrFallback(id, make) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (!window.Chart) { el.parentElement.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:2rem;text-align:center;">Charts need CDN access (chart.js) — KPIs and tables below stay live.</div>'; return; }
+            if (execCharts[id]) execCharts[id].destroy();
+            execCharts[id] = make(el);
+        }
+        const gridColor = 'rgba(255,255,255,0.06)';
+
+        /* ---------- Page 1: Executive Overview ---------- */
+        async function loadExecutive() {
+            try {
+                const kpi = await api('/api/admin/analytics/kpi-summary');
+                document.getElementById('kpi-dau').innerText = (kpi.dauToday ?? 0).toLocaleString();
+                document.getElementById('kpi-new').innerText = (kpi.newUsersToday ?? 0).toLocaleString();
+                document.getElementById('kpi-interactions').innerText = (kpi.interactions24h ?? 0).toLocaleString();
+                document.getElementById('kpi-p95').innerText = (kpi.p95LatencyMs ?? 0).toFixed(1) + ' ms';
+                document.getElementById('kpi-err').innerText = 'error rate: ' + (kpi.errorRate24hPct ?? 0).toFixed(2) + '%';
+                document.getElementById('kpi-err').className = 'kpi-delta ' + ((kpi.errorRate24hPct ?? 0) > 5 ? 'down' : 'flat');
+                document.getElementById('kpi-engagement').innerText = 'engagement: ' + (kpi.engagementRatePct ?? 0).toFixed(1) + '%';
+                setDelta('kpi-dau-delta', kpi.dauDeltaPct ?? 0, false);
+                document.getElementById('kpi-dau-delta').innerText += ' vs yesterday';
+                setDelta('kpi-new-delta', kpi.newUsersDeltaPct ?? 0, false);
+                document.getElementById('kpi-new-delta').innerText += ' velocity';
+            } catch (e) { console.error(e); }
+            try {
+                const range = adminRange === 'today' ? '7d' : adminRange;
+                const [growth, velocity] = await Promise.all([
+                    api('/api/admin/analytics/user-growth?range=' + range),
+                    api('/api/admin/analytics/content-velocity?days=' + (range === '7d' ? 7 : 30))
+                ]);
+                document.getElementById('exec-trend-range').innerText = 'Last ' + growth.days + ' days';
+                const labels = growth.points.map(p => new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                document.getElementById('spark-dau').innerHTML = sparklineSVG(growth.points.map(p => p.dau), '#4f46e5');
+                document.getElementById('spark-new').innerHTML = sparklineSVG(growth.points.map(p => p.newUsers), '#0d9488');
+                const byDay = {};
+                (velocity.points || []).forEach(p => { byDay[new Date(p.date).toDateString()] = (p.posts || 0) + (p.shares || 0); });
+                const content = growth.points.map(p => byDay[new Date(p.date).toDateString()] || 0);
+                document.getElementById('spark-interact').innerHTML = sparklineSVG(content, '#f59e0b');
+                chartOrFallback('exec-trend', el => new Chart(el, {
+                    type: 'line',
+                    data: { labels, datasets: [
+                        { label: 'DAU', data: growth.points.map(p => p.dau), borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.18)', fill: true, tension: 0.4, pointRadius: 0 },
+                        { label: 'Content', data: content, borderColor: '#0d9488', backgroundColor: 'rgba(13,148,136,0.15)', fill: true, tension: 0.4, pointRadius: 0 }
+                    ]},
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a1a1aa', boxWidth: 12 } } }, scales: { x: { ticks: { color: '#63636b', maxTicksLimit: 8 }, grid: { color: gridColor } }, y: { ticks: { color: '#63636b' }, grid: { color: gridColor }, beginAtZero: true } } }
+                }));
+                const totals = velocity.points.reduce((a, p) => ({ posts: a.posts + (p.posts || 0), shares: a.shares + (p.shares || 0) }), { posts: 0, shares: 0 });
+                chartOrFallback('exec-donut', el => new Chart(el, {
+                    type: 'doughnut',
+                    data: { labels: ['Original posts', 'Shares', 'Media attachments'], datasets: [{ data: [Math.max(0, totals.posts - totals.shares), totals.shares, velocity.mediaAttachments || 0], backgroundColor: ['#4f46e5', '#0d9488', '#f59e0b'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: '#a1a1aa', boxWidth: 12 } } } }
+                }));
+            } catch (e) { console.error(e); }
+            try {
+                const [health, safety] = await Promise.all([
+                    api('/api/admin/analytics/api-health'),
+                    api('/api/admin/analytics/safety-metrics?days=7')
+                ]);
+                const rows = [];
+                (health.slowestEndpoints || []).filter(e => e.errorPct > 0).slice(0, 3).forEach(e => rows.push({
+                    signal: `<span class="method-badge method-${escapeHtml(e.method)}">${escapeHtml(e.method)}</span> ${escapeHtml(e.endpoint)}`,
+                    detail: 'Server errors on hot path', vol: e.requests + ' req', sev: e.errorPct > 20 ? 'danger' : 'warning', sevText: e.errorPct.toFixed(1) + '% 5xx'
+                }));
+                const spikes = (safety.blocksOverTime || []).slice(-3);
+                const avg = spikes.reduce((a, p) => a + p.blocks, 0) / Math.max(1, spikes.length);
+                if (avg >= 5) rows.push({ signal: '🚫 Block spike', detail: 'Elevated user blocks (3-day avg)', vol: avg.toFixed(1) + '/day', sev: 'warning', sevText: 'Watch' });
+                if ((health.count5xx || 0) > 0 && rows.length === 0) rows.push({ signal: '⚠️ 5xx present', detail: (health.count5xx || 0) + ' server errors in 24h', vol: health.totalRequests24h + ' req', sev: 'warning', sevText: 'Review' });
+                document.getElementById('anomalies-body').innerHTML = rows.length === 0
+                    ? '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No anomalies detected — platform nominal. ✓</td></tr>'
+                    : rows.map(r => `<tr><td>${r.signal}</td><td style="color:var(--text-secondary);">${r.detail}</td><td class="tnum">${r.vol}</td><td><span class="status-badge badge-${r.sev}">${r.sevText}</span></td></tr>`).join('');
+            } catch (e) { console.error(e); }
         }
 
         async function loadOverview() {
@@ -1977,6 +2411,121 @@ namespace Social.API.Controllers.Admin
             loadAuditLogs();
         }
 
+        /* ---------- Page 2: System Observability ---------- */
+        let endpointsRows = [];
+        let endpointsSort = { key: 'avg', dir: -1 };
+        function sortEndpoints(key) {
+            if (endpointsSort.key === key) endpointsSort.dir *= -1;
+            else endpointsSort = { key, dir: -1 };
+            renderEndpointsMatrix();
+        }
+        function renderEndpointsMatrix() {
+            const rows = [...endpointsRows].sort((a, b) => {
+                const k = endpointsSort.key === 'endpoint' ? 'endpoint' : endpointsSort.key === 'requests' ? 'requests' : endpointsSort.key === 'err' ? 'errorPct' : 'avgMs';
+                const va = a[k], vb = b[k];
+                return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * endpointsSort.dir;
+            });
+            document.getElementById('endpoints-body').innerHTML = rows.length === 0
+                ? '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No API traffic in the last 24h.</td></tr>'
+                : rows.map(e => `<tr>
+                    <td><span class="method-badge method-${escapeHtml(e.method)}">${escapeHtml(e.method)}</span></td>
+                    <td style="font-family:monospace; font-size:0.78rem;">${escapeHtml(e.endpoint)}</td>
+                    <td class="tnum">${e.requests.toLocaleString()}</td>
+                    <td class="tnum">${e.avgMs.toFixed(1)} ms</td>
+                    <td><span class="status-badge ${e.errorPct > 5 ? 'badge-danger' : e.errorPct > 0 ? 'badge-warning' : 'badge-success'}">${e.errorPct.toFixed(1)}%</span></td>
+                    <td>${sparklineSVG([e.avgMs * (1 - e.errorPct / 200), e.avgMs, e.avgMs * (1 + e.errorPct / 200)], e.errorPct > 5 ? '#e11d48' : '#4f46e5')}</td>
+                </tr>`).join('');
+        }
+        async function loadSystemObservability() {
+            try {
+                const h = await api('/api/admin/analytics/api-health');
+                document.getElementById('lat-p50').innerText = h.p50Ms.toFixed(1) + ' ms';
+                document.getElementById('lat-p90').innerText = h.p90Ms.toFixed(1) + ' ms';
+                document.getElementById('lat-p95').innerText = h.p95Ms.toFixed(1) + ' ms';
+                document.getElementById('lat-p99').innerText = h.p99Ms.toFixed(1) + ' ms';
+                document.getElementById('sys-req-count').innerText = (h.totalRequests24h ?? 0).toLocaleString() + ' requests';
+                document.getElementById('sys-2xx').innerText = (h.count2xx ?? 0).toLocaleString();
+                document.getElementById('sys-4xx').innerText = (h.count4xx ?? 0).toLocaleString();
+                document.getElementById('sys-5xx').innerText = (h.count5xx ?? 0).toLocaleString();
+                endpointsRows = h.slowestEndpoints || [];
+                renderEndpointsMatrix();
+            } catch (e) { console.error(e); }
+        }
+        let sysAuditCache = [];
+        let sysAuditTimer = null;
+        function startSysAuditPoll() {
+            loadSysAuditStream();
+            if (sysAuditTimer) return;
+            sysAuditTimer = setInterval(() => {
+                if (document.getElementById('tab-diagnostics')?.style.display !== 'none') loadSysAuditStream(true);
+            }, 15000);
+        }
+        async function loadSysAuditStream(quiet) {
+            try {
+                sysAuditCache = await api('/api/admin/analytics/request-stream?take=50');
+                renderSysAuditStream();
+            } catch (e) { if (!quiet) console.error(e); }
+        }
+        function renderSysAuditStream() {
+            const q = (document.getElementById('sys-audit-filter')?.value || '').toLowerCase();
+            const rows = sysAuditCache.filter(r =>
+                !q || String(r.status).includes(q) || (r.endpoint || '').toLowerCase().includes(q) || ((r.ip || '').toLowerCase().includes(q)));
+            document.getElementById('sys-audit-body').innerHTML = rows.length === 0
+                ? '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No matching requests.</td></tr>'
+                : rows.slice(0, 25).map(r => `<tr>
+                    <td class="tnum" style="white-space:nowrap;">${escapeHtml(new Date(r.at).toISOString().slice(11, 19))}</td>
+                    <td><span class="method-badge method-${escapeHtml(r.method)}">${escapeHtml(r.method)}</span></td>
+                    <td style="font-family:monospace; font-size:0.78rem;">${escapeHtml(r.endpoint)}</td>
+                    <td><span class="status-badge ${r.status >= 500 ? 'badge-danger' : r.status >= 400 ? 'badge-warning' : 'badge-success'}">${r.status}</span></td>
+                    <td class="tnum">${r.latencyMs.toFixed(1)} ms</td>
+                    <td style="font-family:monospace; font-size:0.75rem;">${escapeHtml((r.userId || 'anon').slice(0, 8))}</td>
+                    <td class="tnum">${escapeHtml(r.ip || '—')}</td>
+                </tr>`).join('');
+        }
+
+        /* ---------- Page 3: User Intelligence & Safety ---------- */
+        async function loadUserIntelligence() {
+            try {
+                const range = adminRange === 'today' ? '7d' : adminRange;
+                const growth = await api('/api/admin/analytics/user-growth?range=' + range);
+                document.getElementById('users-growth-meta').innerText = `DAU ${growth.dau} · WAU ${growth.wau} · MAU ${growth.mau}`;
+                const labels = growth.points.map(p => new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                chartOrFallback('users-growth-chart', el => new Chart(el, {
+                    type: 'bar',
+                    data: { labels, datasets: [
+                        { label: 'New signups', data: growth.points.map(p => p.newUsers), backgroundColor: 'rgba(79,70,229,0.75)', borderRadius: 3 },
+                        { label: 'DAU', data: growth.points.map(p => p.dau), type: 'line', borderColor: '#0d9488', tension: 0.4, pointRadius: 0 }
+                    ]},
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a1a1aa', boxWidth: 12 } } }, scales: { x: { ticks: { color: '#63636b', maxTicksLimit: 8 }, grid: { color: gridColor } }, y: { ticks: { color: '#63636b' }, grid: { color: gridColor }, beginAtZero: true } } }
+                }));
+            } catch (e) { console.error(e); }
+            try {
+                const safety = await api('/api/admin/analytics/safety-metrics?days=30');
+                const total = (safety.privateAccounts || 0) + (safety.publicAccounts || 0);
+                const privPct = total === 0 ? 50 : (safety.privateAccounts * 100 / total);
+                document.getElementById('privacy-private-seg').style.width = privPct + '%';
+                document.getElementById('privacy-public-seg').style.width = (100 - privPct) + '%';
+                document.getElementById('privacy-private-n').innerText = (safety.privateAccounts || 0).toLocaleString();
+                document.getElementById('privacy-public-n').innerText = (safety.publicAccounts || 0).toLocaleString();
+                document.getElementById('privacy-ratio').innerText = (safety.privateRatioPct || 0).toFixed(1) + '% private';
+                document.getElementById('topblocked-body').innerHTML = (safety.topBlocked || []).length === 0
+                    ? '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No blocks recorded. ✓</td></tr>'
+                    : safety.topBlocked.slice(0, 8).map(t => `<tr>
+                        <td><strong>${escapeHtml(t.userName)}</strong><div style="font-size:0.7rem;color:var(--text-muted);font-family:monospace;">${escapeHtml(t.userId.slice(0, 8))}…</div></td>
+                        <td><span class="status-badge ${t.blockCount >= 5 ? 'badge-danger' : 'badge-warning'}">${t.blockCount}</span></td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <button class="btn-table-action" onclick="inspectBlockedUser('${escapeHtml(t.userId)}')">Inspect</button>
+                            <button class="btn-table-action" style="color:var(--accent-rose);" onclick="openBanModal('${escapeHtml(t.userId)}', '${escapeHtml(t.userName)}')">Restrict</button>
+                        </td>
+                    </tr>`).join('');
+            } catch (e) { console.error(e); }
+        }
+        function inspectBlockedUser(userId) {
+            showTab('users', true);
+            const input = document.getElementById('user-search-input');
+            if (input) { input.value = userId; searchUsers(); }
+        }
+
         async function loadDiagnostics() {
             try {
                 const res = await fetch('/api/admin/analytics/diagnostics');
@@ -1993,11 +2542,12 @@ namespace Social.API.Controllers.Admin
 
         // Initialize active page data
         const initialTab = '{{activePage}}';
-        if (initialTab === 'users') loadUsers();
+        pollHeartbeat();
+        if (initialTab === 'users') { loadUsers(); loadUserIntelligence(); }
         else if (initialTab === 'moderation') loadModerationFeed();
         else if (initialTab === 'audit') loadAuditLogs();
-        else if (initialTab === 'diagnostics') loadDiagnostics();
-        else loadOverview();
+        else if (initialTab === 'diagnostics') { loadDiagnostics(); loadSystemObservability(); startSysAuditPoll(); }
+        else { loadOverview(); loadExecutive(); }
     </script>
 </body>
 </html>

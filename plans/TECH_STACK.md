@@ -38,6 +38,8 @@
 | Identity Store | Microsoft.AspNetCore.Identity.EntityFrameworkCore | 9.0.4 | ASP.NET Identity persistence |
 | Auth Tokens | Microsoft.AspNetCore.Authentication.JwtBearer | 9.0.4 | JWT validation |
 | Distributed Cache | StackExchange.Redis | 2.8.16 | Redis caching with fallback |
+| Telemetry Channel | System.Threading.Channels (BCL) | in-box | Bounded 10k drop-on-full request log pipeline |
+| Dashboard Charts | Chart.js (CDN, deferred) | 4.4.1 | Trend/donut/bar charts with no-CDN SVG fallback |
 
 ## Domain Layer (Social.Core)
 | Layer | Technology | Version | Notes |

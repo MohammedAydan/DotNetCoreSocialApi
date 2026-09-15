@@ -95,7 +95,7 @@ namespace Social.Tests.Integration.Admin
             content.Should().Contain("User & Identity Directory");
             content.Should().Contain("Centralized Content Moderation");
             content.Should().Contain("Administrative Audit Trail");
-            content.Should().Contain("System Diagnostics");
+            content.Should().Contain("System Observability");
 
             // Verify module DOM containers
             content.Should().Contain("id=\"tab-overview\"");
