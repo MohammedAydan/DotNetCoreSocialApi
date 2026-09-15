@@ -1,4 +1,5 @@
 using DotNetEnv;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Social.Admin.Web;
 using Social.API.Configuration;
@@ -65,6 +66,56 @@ builder.Services.AddOpenApi(options =>
             }
         };
         
+        // Strip meaningless `default: null` annotations that ASP.NET emits for
+        // optional parameters (Microsoft.OpenApi.Any.OpenApiNull). Generators
+        // (Orval zod `.default(null)`, Dart defaults) cannot consume a null
+        // default on a non-nullable schema, so the contract omits them.
+        // Visited set guards recursive schemas.
+        var visited = new HashSet<OpenApiSchema>();
+        static void StripNullDefaults(OpenApiSchema? schema, HashSet<OpenApiSchema> visited)
+        {
+            if (schema is null || !visited.Add(schema))
+                return;
+            if (schema.Default is OpenApiNull)
+            {
+                schema.Default = null;
+            }
+            foreach (var prop in schema.Properties.Values)
+                StripNullDefaults(prop, visited);
+            StripNullDefaults(schema.Items, visited);
+            StripNullDefaults(schema.AdditionalProperties, visited);
+            StripNullDefaults(schema.Not, visited);
+            foreach (var sub in schema.AllOf) StripNullDefaults(sub, visited);
+            foreach (var sub in schema.AnyOf) StripNullDefaults(sub, visited);
+            foreach (var sub in schema.OneOf) StripNullDefaults(sub, visited);
+        }
+
+        if (document.Paths is not null)
+        {
+            foreach (var path in document.Paths.Values)
+            {
+                foreach (var operation in path.Operations.Values)
+                {
+                    if (operation.Parameters is not null)
+                    {
+                        foreach (var parameter in operation.Parameters.OfType<OpenApiParameter>())
+                            StripNullDefaults(parameter.Schema, visited);
+                    }
+                    if (operation.RequestBody is OpenApiRequestBody body)
+                        foreach (var media in body.Content.Values)
+                            StripNullDefaults(media.Schema, visited);
+                    foreach (var response in operation.Responses.Values.OfType<OpenApiResponse>())
+                        foreach (var media in response.Content.Values)
+                            StripNullDefaults(media.Schema, visited);
+                }
+            }
+        }
+        if (document.Components?.Schemas is not null)
+        {
+            foreach (var schema in document.Components.Schemas.Values)
+                StripNullDefaults(schema, visited);
+        }
+
         return Task.CompletedTask;
     });
 });
@@ -108,10 +159,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.  
+// Configure the HTTP request pipeline.
+// OpenAPI document is always mapped so SDK generation (`pnpm run openapi:export`)
+// works in every environment; the interactive Swagger UI stays dev-only.
+app.MapOpenApi();
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "Social API");

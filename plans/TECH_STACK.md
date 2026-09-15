@@ -57,3 +57,14 @@
 | Web Test Host | Microsoft.AspNetCore.Mvc.Testing | 9.0.2 | In-memory WebApplicationFactory |
 | EF Test Provider | Microsoft.EntityFrameworkCore.InMemory | 9.0.4 | Non-relational probe only; ExecuteUpdate unsupported |
 | Relational Test DB | Microsoft.EntityFrameworkCore.Sqlite | 9.0.4 | SQLite in-memory for ExecuteUpdate/transaction repo tests |
+
+## SDK Generation Pipeline (contract-driven, pnpm-only)
+| Layer | Technology | Version | Notes |
+|-------|-----------|---------|-------|
+| Package Manager | pnpm | 10.33.2 | Strict; never npm/yarn. `packageManager` pinned in root `package.json` |
+| OpenAPI source | Microsoft.Extensions.ApiDescription.Server | 9.0.4 | Build-time `Social/Social.API.json` via `OpenApiGenerateDocuments` (direct input to `sdks/generator`) |
+| Web generator | Orval | 8.33.0 (`^8.21.0` range, CVE-2026-72717 fixed) | Dual config: react-query v5 hooks + zod schemas, tags-split |
+| Web runtime | @tanstack/react-query `^5`, axios `^1`, zod `^3`, @hookform/resolvers `^4` | - | Axios mutator is AbortController-native (no CancelToken) |
+| Mobile generator | @openapitools/openapi-generator-cli | npm `^2.41.0` = Java generator 7.25.0 (dart-dio fixes) | `dart-dio`, `json_serializable`, null-safe; pubspec patched to `^3.8.0` post-gen |
+| Mobile runtime | Flutter 3.47.0 / Dart 3.13.0, Dio 5, json_serializable 6 | - | `SocialApiClientFactory` Bearer interceptor; `flutter analyze` 0 errors |
+| Typecheck | TypeScript 5.9, `tsc --noEmit` | - | `pnpm run typecheck`; strict + `noUncheckedIndexedAccess` |

@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["node"],
+    // Generated sources live in ../web but dependencies are installed in the
+    // generator package: map the bare imports Orval emits to this package's
+    // node_modules (typecheck-only; consumers resolve via their own deps).
+    "baseUrl": ".",
+    "paths": {
+      "@tanstack/react-query": ["./node_modules/@tanstack/react-query"],
+      "zod": ["./node_modules/zod"]
+    }
+  },
+  "include": ["orval.config.ts", "custom-instance.ts", "../web"]
+}

@@ -29,6 +29,7 @@ graph TD
 | `Social.Infrastructure` | EF Core `ApplicationDbContext`, repositories, JWT TokenService, EmailService, Caching | `Social.Infrastructure/` |
 | `Social.Admin.Web` | Blazor / Razor components, Admin Dashboard layout, models, UI services | `Social.Admin.Web/` |
 | `Social.API` | REST Controllers, Middlewares, Rate Limiting, OpenAPI / Swagger, UI Host | `Social/` |
+| SDK Pipeline | Contract-driven client generation (Orval TS + dart-dio) + hand-written Axios/Dio auth clients | `sdks/generator` (engine: package, orval config, mutator, scripts, sdk-assets) → `sdks/web`, `sdks/mobile` (generated trees gitignored) |
 
 ## Boundaries & Invariants
 - `Social.Core` has ZERO dependencies on outer layers and ZERO dependencies on EF Core / ASP.NET runtime.

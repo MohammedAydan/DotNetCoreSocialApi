@@ -1,0 +1,28 @@
+{
+  "name": "@social/sdk-generator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Contract-driven SDK generation pipeline for Social API (.NET 9 OpenAPI -> TypeScript/React Query + Flutter/Dart)",
+  "packageManager": "pnpm@10.33.2",
+  "type": "module",
+  "scripts": {
+    "generate:web": "orval",
+    "generate:mobile": "node scripts/generate-mobile.mjs",
+    "generate:all": "pnpm run generate:web && pnpm run generate:mobile",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^4.1.0",
+    "@tanstack/react-query": "^5.62.0",
+    "axios": "^1.7.9",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.41.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "orval": "^8.21.0",
+    "react": "^18.3.1",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,5 +1,15 @@
 # Engineering Patterns
 
+## Pattern: Verify-Before-Delete on Filesystem Moves [feature: sdk-isolation]
+- **Problem:** Chained `Move-Item ...; Remove-Item <source-parent>` deleted an SDK tree when the move failed on a transient OS file lock.
+- **Solution:** Never chain a destructive command after a move. Check the move result (exit code / destination exists) before deleting anything; prefer copy → verify → delete, or regenerate-from-source when the tree is disposable.
+- **Gotchas:** Windows file locks (indexers, watchers, just-exited daemons) make directory moves flaky; `Get-Process` may already show nothing by the time you check.
+
+## Pattern: Contract-Driven SDK Generation (fix the spec, not the output) [feature: sdk-generation-pipeline]
+- **Problem:** Generators emit un-compilable code (Orval zod `.default(null)`, `build_runner` format failures) from a technically-valid OpenAPI document.
+- **Solution:** Fix the contract at the source (document transformer strips `OpenApiNull` defaults) and codify unavoidable generator quirks as post-generation steps in versioned scripts (`generate-mobile.mjs`: pubspec `^3.8.0` patch, asset restore). Never hand-edit generated trees; keep hand-written sources outside them (`sdk-assets/`, `src/api/custom-instance.ts`) and restore via script.
+- **Gotchas:** Verify fixes by re-probing the emitted spec + full from-zero `generate:all`, not by reading generator logs. Microsoft.OpenApi 1.x models `Default` as `IOpenApiAny` (`OpenApiNull`), not `JsonNode` — type-checks against the wrong model fail silently.
+
 ## Pattern: Standardized API Response Envelope [feature: clean-architecture-refactor]
 - **Problem:** API returns mixed error/success formats, inconsistent status envelopes.
 - **Solution:** Use `ApiResponse<T>` with standard factories `SuccessResponse(message, data)` and `ErrorResponse(message, errors)`.
