@@ -509,3 +509,70 @@ Run `dotnet run --project Social` to start the API and dashboard at `http://loca
 Start the API with `dotnet run --project Social` and open `http://localhost:5157/admin/moderation` (or `/admin/users`, `/admin/audit-logs`). Verify the elevated Social Stream layout, media mosaics, clamped text with "Read full post", View Switcher (`📰 Stream`, `⊞ Grid`, `☰ List`), Quick Stat Pills, and standardized UTC timestamps with hover tooltips. All 160 automated tests pass (`dotnet test Social.sln -c Release`).
 ---
 
+## Session: 2026-09-15 19:20 UTC
+### What was done
+- Session resume via `plans/context.md`, `SESSION_LOG.md`, `ef-core-indexes-and-relationships/` plan/tasks/context.
+- Hardened `ApplicationDbContext`: explicit `HasMaxLength(255)` on indexed FKs (match `AspNetUsers.Id`, stay under utf8mb4 3072-byte limit), explicit `Post.ParentPostId` index, documented no global query filter (admin must list deleted).
+- Rewrote `PostRepository` to production standards: transactions + `ExecuteUpdateAsync` counters with rows-affected `KeyNotFoundException` guard; strict share policy (exists/not-deleted/public/non-private/no bidirectional block, null-safe); two-way block + `!IsDeleted` on feed/profile/single; `Math.Clamp(limit,1,50)`, deterministic `CreatedAt DESC, Id DESC`, `AsSplitQuery()`, batch likes incl. 3-level parents; soft delete (`IsDeleted=true`, keep shares); media reconciled by `Id`.
+- Static analysis: `dotnet build Social.sln -c Release` 0 errors (143 pre-existing nullable warnings).
+- Migration `RefactorSocialFeedAndIndexes` generated; idempotent SQL verified — history-row insert only, zero destructive DDL.
+- Tests: added `PostRepositoryPrivacyTests` (6 SQLite relational tests: bidirectional block, private/non-public/deleted share rejection, deterministic pagination, soft delete); full suite 167/167 passing. Added `Microsoft.EntityFrameworkCore.Sqlite` + `InMemory` 9.0.4 test deps.
+- Updated living docs: `TECH_STACK.md`, `DECISIONS.md` (ADR-006), `PATTERNS.md`, `plans/context.md`, `tasks.md`.
+
+### Decisions made
+- Kept `BlockUser.Id` column for zero breaking changes (composite PK already enforced); DTO/tests depend on `Id`.
+- Kept `varchar(255)` (not 450) for composite FKs — 450 would overflow 3072-byte limit.
+- Used SQLite (not InMemory) for repo tests — InMemory lacks `ExecuteUpdate`/transactions.
+
+### Files changed
+- `Social.Infrastructure/Data/ApplicationDbContext.cs`
+- `Social.Infrastructure/Repositories/PostRepository.cs`
+- `Social.Infrastructure/Migrations/20260915161837_RefactorSocialFeedAndIndexes.cs(.Designer.cs)` + snapshot
+- `Social.Tests/Unit/Repositories/PostRepositoryPrivacyTests.cs`
+- `Social.Tests/Social.Tests.csproj`
+- `plans/*`
+
+### State at end of session
+- Active feature: ef-core-indexes-and-relationships (Task 8 in-progress)
+- Last completed task: Refactor, migration generation, 167/167 tests
+- Next task: Task 8 — apply migration to production MySQL (`dotnet ef database update`), then Task 9 verification
+- Blockers: None (needs human confirmation before prod `database update`)
+
+### Resume instructions
+Run `dotnet ef database update --project Social.Infrastructure --startup-project Social` only after explicit human approval (production DB). Then verify feed/block/share behavior and close with review.md.
+---
+
+## Session: 2026-09-15 (privacy hardening follow-up)
+### What was done
+- Applied Fixes A–E to `PostRepository.cs`: accepted-follower private access in `GetPostByIdAsync`; private-target guard in `GetPostsByUserIdAsync`; `ParentPost.Media` includes at all depths (feed/my/single/profile); `DistinctBy(Id)` in `ReconcileMediaAsync`; `ThrowIfNull` in `AddPostAsync`.
+- Verified `ApplicationDbContext.cs` already compliant: `HasMaxLength(255)`, UTC+precision(6), `ParentPostId` index, explicit `!IsDeleted` filtering.
+- Extended `PostRepositoryPrivacyTests.cs` to 12 SQLite tests (added accepted-follower view, non-follower denials, duplicate-ID reconcile, nested parent media).
+- `dotnet build --configuration Release`: 0 errors. `dotnet test --configuration Release`: 174/174 passed.
+
+### Files changed
+- `Social.Infrastructure/Repositories/PostRepository.cs`
+- `Social.Tests/Unit/Repositories/PostRepositoryPrivacyTests.cs`
+- `plans/DECISIONS.md` (ADR-007)
+
+### State at end
+- Next: human approval before any prod migration; no schema change required (no new migration generated).
+---
+
+## Session: 2026-09-15 (full hardening: Bugs 1–8 + Refactors A–G)
+### What was done
+- `PostRepository.cs`: owner sees own private posts in profile query; share no longer attaches detached parent (read methods hydrate); `MaskDeletedParentPosts` chain-wide on all 4 reads; `ValidatePage`/`NormalizeLimit` (throw &lt;1, clamp upper 50) on all 3 paginated reads; `AnyAsync` user pre-check before `Add` (rows guard kept as race guard); `OrdinalIgnoreCase` everywhere; `LoadCompletePostsQuery` + `FeedQueryForViewer` centralization; dead `depth` params removed; XML docs on all helpers; `DeletePostAsync` share policy documented.
+- `ApplicationDbContext.cs`: covering indexes `(UserId,CreatedAt,Id)` + `(Visibility,CreatedAt,Id)`; migration `TunePostFeedIndexes` generated (index-only, no data loss).
+- `PostRepositoryPrivacyTests.cs`: 12 → 19 SQLite tests (owner visibility, masking owner/stranger, orphan share, bidirectional block, pagination throw/clamp, 4-level likes, detached safety).
+- `dotnet build --configuration Release`: 0 errors. `dotnet test --configuration Release --verbosity normal`: 184/184 passed.
+
+### Files changed
+- `Social.Infrastructure/Repositories/PostRepository.cs`
+- `Social.Infrastructure/Data/ApplicationDbContext.cs`
+- `Social.Infrastructure/Migrations/*_TunePostFeedIndexes.cs(.Designer.cs)` + snapshot
+- `Social.Tests/Unit/Repositories/PostRepositoryPrivacyTests.cs`
+- `plans/DECISIONS.md` (ADR-008)
+
+### State at end
+- Next: human approval before `dotnet ef database update` (2 pending migrations); `IPostRepository` signatures unchanged; no global filter; soft-delete only.
+---
+
