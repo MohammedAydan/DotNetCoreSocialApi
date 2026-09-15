@@ -7,6 +7,14 @@
 .env
 **/.env
 
+# Ephemeral teamwork explorer directories
+.agents/*/
+!.agents/agents/
+!.agents/rules/
+!.agents/skills/
+.agents/*.md
+ORIGINAL_REQUEST.md
+
 # User-specific files
 *.rsuser
 *.suo
