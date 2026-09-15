@@ -9,8 +9,11 @@ Clean Architecture (Hexagonal / Onion Architecture) with CQRS and Repository Pat
 ## System Diagram
 ```mermaid
 graph TD
-    Client["Client Applications (Web / Mobile)"] -->|HTTP / REST| API["Social.API (Presentation Layer)"]
-    API -->|Commands & Queries| APP["Social.Application (Use Cases)"]
+    Client["Client Applications (Web / Mobile)"] -->|HTTP / REST| API["Social.API (Host & REST API)"]
+    Admin["Admin Browser"] -->|HTTP /admin| API
+    API -->|Blazor / Razor Components| UI["Social.Admin.Web (Admin UI Sub-Project)"]
+    UI -->|Admin Service Orchestration| APP["Social.Application (Use Cases)"]
+    API -->|Commands & Queries| APP
     API -->|DI Setup & Host| INFRA["Social.Infrastructure (Data / External Services)"]
     APP -->|Domain Interfaces & Entities| CORE["Social.Core (Domain Layer)"]
     INFRA -->|Implements Repositories & Services| CORE
@@ -24,7 +27,8 @@ graph TD
 | `Social.Core` | Domain entities, enums, repository contracts, domain service interfaces | `Social.Core/` |
 | `Social.Application` | CQRS commands, queries, handlers, DTOs, AutoMapper profiles, validations | `Social.Application/` |
 | `Social.Infrastructure` | EF Core `ApplicationDbContext`, repositories, JWT TokenService, EmailService, Caching | `Social.Infrastructure/` |
-| `Social.API` | REST Controllers, Middlewares, Rate Limiting, OpenAPI / Swagger | `Social/` |
+| `Social.Admin.Web` | Blazor / Razor components, Admin Dashboard layout, models, UI services | `Social.Admin.Web/` |
+| `Social.API` | REST Controllers, Middlewares, Rate Limiting, OpenAPI / Swagger, UI Host | `Social/` |
 
 ## Boundaries & Invariants
 - `Social.Core` has ZERO dependencies on outer layers and ZERO dependencies on EF Core / ASP.NET runtime.
@@ -33,7 +37,12 @@ graph TD
 - `Social.API` configures DI and connects `Social.Application` with `Social.Infrastructure`.
 
 ## Security Model
-- Auth: JWT Bearer tokens with expiration and refresh token rotation.
-- Token Invalidation: In-memory/Redis token blacklist middleware.
+- Auth: Dual-delivery JWT Bearer authentication:
+  - API clients supply `Authorization: Bearer <token>` header.
+  - Browser admin sessions supply `admin_token` HttpOnly cookie extracted via `JwtBearerEvents.OnMessageReceived`.
+  - Dedicated `/admin/login` and `/admin/logout` routes with unauthenticated redirect from `/admin`.
+- Role Authorization: Role-based policies (`AdminOnly`, `AdminOrModerator`) enforced on all admin endpoints.
+- Token Invalidation: In-memory/Redis token blacklist middleware verifying both bearer headers and admin cookies.
 - Secrets: Environment variables loaded via `.env` / system env.
-- Input validation: Controller / command boundary checks and model validations.
+- Input validation: Controller / command boundary checks, FluentValidation MediatR pipeline, and model validations.
+

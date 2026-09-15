@@ -15,6 +15,14 @@
 | Rate Limiting | AspNetCoreRateLimit | 5.0.0 | IP-based client rate limiting |
 | Env Loader | DotNetEnv | 3.1.1 | `.env` file loader |
 
+## Admin UI Sub-Project (Social.Admin.Web)
+| Layer | Technology | Version | Notes |
+|-------|-----------|---------|-------|
+| UI Framework | Razor Class Library / Blazor Components | 9.0.2 | `Microsoft.NET.Sdk.Razor` |
+| Component Abstractions | Microsoft.AspNetCore.Components.Web | 9.0.2 | Blazor component model |
+| Authorization | Microsoft.AspNetCore.Components.Authorization | 9.0.2 | Component-level RBAC |
+| Assets | Native CSS / JS | Modern Slate Theme | Dark-mode design system with responsive layouts |
+
 ## Application Layer (Social.Application)
 | Layer | Technology | Version | Notes |
 |-------|-----------|---------|-------|

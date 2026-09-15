@@ -1,0 +1,26 @@
+# Tasks: Rich Post Display, Granular Controls & Moderation Notifications
+
+- [x] Task 1: Domain & Core Enhancements for Rich Post Moderation
+  - [x] Extend `ModerationFeedItemRecord` in `Social.Core/Interfaces/IAdminRepository.cs` with `Title`, `Visibility`, `Media` (`ModerationMediaRecord`), `AuthorEmail`, and `SharesCount` (backwards-compatible with optional parameters)
+  - [x] Add `UpdatePostVisibilityAsync` and `DeletePostPermanentlyAsync` to `IAdminRepository`
+- [x] Task 2: Infrastructure & Query Enhancements
+  - [x] Update `AdminRepository.cs` to include `.Include(p => p.Media)` and map media records in `GetModerationFeedAsync`
+  - [x] Implement `UpdatePostVisibilityAsync` and `DeletePostPermanentlyAsync` in `AdminRepository.cs`
+  - [x] Update `TestAdminDoubles.cs` to support new repository signatures without breaking existing tests
+- [x] Task 3: Application CQRS & Automated User Moderation Notifications
+  - [x] Update `AdminModerationItemDto` and mapping in `GetModerationFeedQuery` to expose rich post media and visibility
+  - [x] Inject `INotificationRepository` into `HidePostCommandHandler`, `RestorePostCommandHandler`, `HideCommentCommandHandler`, and `RestoreCommentCommandHandler` to persist in-app moderation notifications for authors
+  - [x] Add `UpdatePostVisibilityCommand` and `DeletePostPermanentlyCommand` with validation and audit logging
+- [x] Task 4: API Endpoints & Dashboard UI Overhaul
+  - [x] Expose `POST /api/admin/moderation/posts/{postId}/visibility` and `DELETE /api/admin/moderation/posts/{postId}` in `AdminModerationController.cs`
+  - [x] Update `AdminDashboardController.cs` moderation view:
+    - Rich post card layout displaying title, author badges, full content, image gallery, and video player
+    - Quick visibility toggle switch (Visible / Hidden) with reason modal
+    - Filter toolbar (All, Posts only, Comments only, With Media, Hidden only) and keyword search
+    - Post Inspection modal with full high-res media preview and audit history
+    - Author moderation shortcuts (View author, ban author if needed)
+- [x] Task 5: Testing, Verification & Closure
+  - [x] Add unit tests for moderation notification dispatch and visibility/delete commands
+  - [x] Run full test suite (`dotnet test Social.sln -c Release`)
+  - [x] Verify 0 compiler errors (`dotnet build Social.sln -c Release`)
+  - [x] Update `plans/context.md`, `plans/SESSION_LOG.md`, and write `review.md`

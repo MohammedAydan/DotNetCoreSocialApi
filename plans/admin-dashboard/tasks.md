@@ -1,0 +1,66 @@
+# Admin Dashboard Tasks
+
+- [x] Task 1: Domain & Infrastructure Foundation
+  - [x] Add `AuditLog` domain entity to `Social.Core/Entities/`
+  - [x] Add `IAuditLogRepository` interface to `Social.Core/Interfaces/`
+  - [x] Add `IAdminRepository` interface to `Social.Core/Interfaces/` (or user/post/comment repo additions)
+  - [x] Map `AuditLog` in `ApplicationDbContext`
+  - [x] Implement `AuditLogRepository` in `Social.Infrastructure/Repositories/`
+  - [x] Add "Moderator" role seeding to `UserRepository.EnsureRolesExistAsync()`
+  - [x] Register repository in DI
+- [x] Task 2: Application Layer CQRS & Invariants
+  - [x] DTOs in `Social.Application/Features/Admin/DTOs/` matching test contracts
+  - [x] Commands & Handlers for User Management (Ban, Unban, Roles, Verify, ResetPassword) with self-protection & validation invariants
+  - [x] Commands & Handlers for Content Moderation (HidePost, RestorePost, HideComment, RestoreComment) with safe counter bounds
+  - [x] Queries & Handlers for User search/pagination, Moderation feed, Platform Analytics overview & diagnostics, and Audit logs
+  - [x] Automatic audit log generation on mutations
+- [x] Task 3: Presentation Layer & RBAC Policies
+  - [x] Add Authorization Policies in `Program.cs` (`AdminOnly`, `AdminOrModerator`)
+  - [x] Implement Controllers:
+    - [x] `AdminUsersController` (`/api/admin/users`)
+    - [x] `AdminModerationController` (`/api/admin/moderation`)
+    - [x] `AdminAnalyticsController` (`/api/admin/analytics`)
+    - [x] `AdminAuditLogsController` (`/api/admin/audit-logs`)
+  - [x] Implement embedded `/admin` web interface endpoint with responsive layout and Admin authorization
+- [x] Task 4: Test Infrastructure & Verification
+  - [x] Update `CustomWebApplicationFactory` to support `IAuditLogRepository` and admin operations
+  - [x] Run full test suite: Tier 1 - Tier 4 Admin tests + 74 baseline tests (121/121 passed)
+  - [x] Verify 0 warnings/errors in Release build
+- [x] Task 5: Documentation & Closure
+  - [x] Update `plans/context.md`, `plans/SESSION_LOG.md`, `plans/ARCH.md`, `plans/DECISIONS.md`
+  - [x] Generate completion review artifact
+- [x] Task 6: Register System Metrics Service in Infrastructure DI
+  - [x] Register `ISystemMetricsService` as `SystemMetricsService` in `Social.Infrastructure/DependencyInjection.cs`
+- [x] Task 7: Create Dedicated UI Sub-Project (`Social.Admin.Web`)
+  - [x] Create `Social.Admin.Web/Social.Admin.Web.csproj` as Razor Class Library targeting `net9.0`
+  - [x] Add references to `Social.Core` and `Social.Application`
+  - [x] Add `Social.Admin.Web` to `Social.sln`
+  - [x] Reference `Social.Admin.Web` from `Social/Social.API.csproj`
+- [x] Task 8: Implement Modular Blazor UI Components, Layouts, Pages, Modals, and Services
+  - [x] Define UI models in `Social.Admin.Web/Models/`
+  - [x] Define `IAdminDashboardService` and `AdminDashboardService` in `Social.Admin.Web/Services/`
+  - [x] Create shell & layouts in `Social.Admin.Web/Components/Layout/` (`AdminLayout`, `AdminSidebar`, `AdminNavbar`, `AdminFooter`)
+  - [x] Create common reusable components in `Social.Admin.Web/Components/Common/` (`MetricCard`, `StatusBadge`, `ConfirmModal`, `PaginationControl`)
+  - [x] Create dashboard page components in `Social.Admin.Web/Components/Pages/`:
+    - [x] `OverviewDashboard.razor` (Metrics, Charts, Health summary)
+    - [x] `UserManagement.razor` (Search, Filters, User table, Paging)
+    - [x] `ContentModeration.razor` (Feed, Media cards, Actions)
+    - [x] `AuditLogViewer.razor` (Timeline, Filters, Detail modal)
+    - [x] `SystemDiagnostics.razor` (Redis cache stats, Memory, Rate-limiting)
+  - [x] Create interactive modal components in `Social.Admin.Web/Components/Modals/`:
+    - [x] `BanUserModal.razor`
+    - [x] `UnbanUserModal.razor`
+    - [x] `RoleManagerModal.razor`
+    - [x] `ResetPasswordModal.razor`
+    - [x] `ModerationActionModal.razor`
+  - [x] Add styling and interactivity in `Social.Admin.Web/wwwroot/` (`admin-dashboard.css`, `admin-dashboard.js`)
+  - [x] Add DI registration extension `AddAdminWebUI()` in `Social.Admin.Web/DependencyInjection.cs`
+- [x] Task 9: Integrate `Social.Admin.Web` with `Social.API` and Update `AdminDashboardController`
+  - [x] Register `AddAdminWebUI()` in `Social/Program.cs`
+  - [x] Connect `AdminDashboardController` to render the clean `Social.Admin.Web` UI shell while preserving `[Authorize(Roles = "Admin")]`
+- [x] Task 10: Run Verification & Full Test Suite
+  - [x] Execute `dotnet build Social.sln -c Release` (0 errors)
+  - [x] Execute `dotnet test Social.sln` (all 121 tests pass)
+- [x] Task 11: Document Decisions and Close Session
+  - [x] Add ADR in `plans/DECISIONS.md`
+  - [x] Update `plans/TECH_STACK.md`, `plans/ARCH.md`, `plans/context.md`, `plans/SESSION_LOG.md`
