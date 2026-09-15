@@ -148,7 +148,7 @@ namespace Social.Infrastructure.Repositories
         //     return posts;
         // }
 
-        private const int MaxPageLimit = 50; // حد أقصى ضد الطلبات الخبيثة/الضخمة
+        private const int MaxPageLimit = 50; // حد أقصى لحماية الذاكرة والسيرفر من طلبات الإغراق
 
         public async Task<IEnumerable<Post>> GetFeedPostsAsync(
             string userId,
@@ -156,7 +156,7 @@ namespace Social.Infrastructure.Repositories
             int limit = 20,
             CancellationToken cancellationToken = default)
         {
-            // ---------- 1) التحقق من المدخلات ----------
+            // ---------- 1) التحقق من صحة المدخلات ----------
             if (string.IsNullOrWhiteSpace(userId))
                 throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
 
@@ -168,29 +168,38 @@ namespace Social.Infrastructure.Repositories
 
             limit = Math.Min(limit, MaxPageLimit);
 
-            // ---------- 2) بناء الاستعلام ----------
-            // سياسة الـ Feed (صحّحت الخلط المنطقي في النسخة القديمة):
-            //   أ) بوستات المستخدم نفسه — دائمًا.
-            //   ب) بوستات من يتابعهم المستخدم (Follow مقبول) — بكل مستويات الظهور الخاصة بهم.
-            //   ج) بوستات عامة من حسابات غير خاصة لم يتابعها (اكتشاف).
-            // ملاحظة: إن لم ترد "الاكتشاف"، احذف الشرط الثالث — الـ EXISTS وحده يكفي.
+            // ---------- 2) بناء الاستعلام المصحح والمحسّن ----------
+            // السياسة المصححة:
+            // 1. بوستات المستخدم نفسه دائمًا.
+            // 2. بوستات الحسابات المتابعة (بشرط قبول المتابعة + البوست Public).
+            //    تم إلغاء فحص !u.IsPrivate لأن المتابعة المقبولة تمنح الصلاحية لرؤية الحسابات الخاصة.
+            // 3. استبعاد الحسابات المحظورة بالاتجاهين.
             var query =
                 from p in _context.Posts
-                join u in _context.Users on p.UserId equals u.Id
                 where p.UserId == userId
-                      || _context.Followers.Any(f =>
-                             f.FollowerId == userId
-                             && f.FollowingId == p.UserId
-                             && f.Accepted)
-                      || (!u.IsPrivate && p.Visibility == VisibilityValues.Public)
-                orderby p.CreatedAt descending, p.Id descending // ✅ ترتيب حتمي: لا تكرار/ضياع بين الصفحات
+                      || (
+                          // فحص المتابعة المقبولة
+                          _context.Followers.Any(f =>
+                              f.FollowerId == userId
+                              && f.FollowingId == p.UserId
+                              && f.Accepted)
+
+                          // رؤية البوستات العامة (تعمل للحساب العام أو الخاص طالما المتابعة مقبولة)
+                          && p.Visibility == VisibilityValues.Public
+
+                          // فحص الحظر بالاتجاهين
+                          && !_context.BlockUsers.Any(b =>
+                              (b.UserId == userId && b.BlockedUserId == p.UserId) ||
+                              (b.UserId == p.UserId && b.BlockedUserId == userId))
+                      )
+                orderby p.CreatedAt descending, p.Id descending // ترتيب حتمي وثابت
                 select p;
 
-            // ---------- 3) التنفيذ والترقيم ----------
+            // ---------- 3) جلب البيانات المنفصلة (Split Query) ----------
             var posts = await query
+                .AsNoTracking()
                 .Skip((page - 1) * limit)
                 .Take(limit)
-                // كل مستوى من الـ ParentPost يحتاج Include معاد التثبيت لتحميل .User عنده
                 .Include(p => p.User)
                 .Include(p => p.Media)
                 .Include(p => p.ParentPost)
@@ -202,26 +211,27 @@ namespace Social.Infrastructure.Repositories
                     .ThenInclude(p => p!.ParentPost)
                         .ThenInclude(p => p!.ParentPost)
                             .ThenInclude(p => p!.User)
-                .AsSplitQuery()   // ✅ يمنع تضخم النتائج (Media × Parents)
-                .AsNoTracking()   // ✅ قراءة فقط — بدون تتبّع
+                .AsSplitQuery()
                 .ToListAsync(cancellationToken);
 
             if (posts.Count == 0)
                 return posts;
 
+            // ---------- 4) مطابقة الإعجابات (Likes) بكفاءة O(1) ----------
             var postIds = posts.Select(p => p.Id).ToList();
 
-            // ---------- 4) الـ Likes — استعلام واحد + HashSet ----------
-            // ToListAsync ثم ToHashSet: متوافق مع كل إصدارات EF Core (ToHashSetAsync يتطلب EF Core 8+)
-            var likedPostsSet = (await _context.Likes
-                    .AsNoTracking()
-                    .Where(l => l.UserId == userId && postIds.Contains(l.PostId))
-                    .Select(l => l.PostId)
-                    .ToListAsync(cancellationToken))
-                .ToHashSet();
+            var likedPostIds = await _context.Likes
+                .AsNoTracking()
+                .Where(l => l.UserId == userId && postIds.Contains(l.PostId))
+                .Select(l => l.PostId)
+                .ToListAsync(cancellationToken);
+
+            var likedPostsSet = new HashSet<string>(likedPostIds);
 
             foreach (var post in posts)
+            {
                 post.IsLiked = likedPostsSet.Contains(post.Id);
+            }
 
             return posts;
         }
