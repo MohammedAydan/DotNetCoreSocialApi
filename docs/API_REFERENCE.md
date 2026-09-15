@@ -110,7 +110,7 @@ Write-time pipeline (ADR-010): block gate → self-skip → preference toggle �
 | `PUT /api/Notifications/{id}` — update (owner only) | Bearer | `id` path req | `UpdateNotificationDto` | envelope | 400; 401 foreign; 404 |
 | `DELETE /api/Notifications/{id}` — delete (owner only) | Bearer | `id` path req | — | envelope | 401 foreign; 404 |
 | `GET /api/Notifications/user/{userId}` — legacy per-user page | Bearer | `userId` path req; `page`, `limit` (d1/d20) | — | envelope, `data` = page | 400; 401 foreign |
-| `GET /api/Notifications/user/{userId}/unread` — legacy unread page | Bearer | same as above | — | envelope | 400; 401 foreign |
+| `GET /api/Notifications/user/{userId}/unread` — legacy unread page | Bearer | `userId` path req; `page` (d1), `limit` (d20) | — | envelope | 400; 401 foreign |
 | `POST /api/Notifications/{id}/mark-read` — mark one read (owner) | Bearer | `id` path req | — | envelope | 401 foreign; 404 |
 | `POST /api/Notifications/user/{userId}/mark-all-read` — mark all read | Bearer | `userId` path req | — | envelope | 401 foreign |
 | `DELETE /api/Notifications/user/{userId}/all` — delete all | Bearer | `userId` path req | — | envelope | 401 foreign |

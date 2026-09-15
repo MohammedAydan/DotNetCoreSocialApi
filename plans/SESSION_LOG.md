@@ -865,4 +865,24 @@ Pipeline home is `sdks/generator` (`pnpm install`, `pnpm run generate:all`, `pnp
 - Blockers: None
 ---
 
+## Session: 2026-09-16 (doc-audit-agents)
+### What was done
+- Committed prior work first: `feat(sdk)` + `docs:`; handled `docs/ARCHITECTURE.md`≡`architecture.md` case-collision (kept new content in path, README notes replacement, original in history).
+- Parity audit via temp node scripts: spec 70/77/0-opIds/11-tags/200-only; fixed 1 row (`unread` "same as above" → explicit `page/limit`); ROW-LEVEL PARITY 100% on fresh post-build spec.
+- SDK re-verified (no `useGetFeedPosts`; `customInstance<void>`; Dart signatures/ctor); wrote merged root `AGENTS.md` (portable rules verbatim + compass: maps, NEVER×10, invariants, recipes A/B/C with true DTO paths, tag index).
+- Health: build 0 errors; test 242/242; generate:all exit 0 (idempotent); analyze exit 0 (11 known warnings); tsc exit 0.
+
+### Decisions made
+- No ADR (audit + docs-only, no architecture change). Corrected 3 mission-brief errors (operationIds, web path/hook names, DTO dir) with evidence.
+
+### Files changed
+- `AGENTS.md` (merged compass), `docs/API_REFERENCE.md` (1-row parity patch), `README.md` (collision note)
+- `plans/doc-audit-agents/*`, `plans/context.md`
+
+### State at end of session
+- Active feature: none (doc-audit-agents completed)
+- Next: re-run temp audits on controller/DTO changes; deferred: operationIds, Scalar UI, CI wiring, 2 migrations + deploy (need human approval)
+- Blockers: None
+---
+
 
