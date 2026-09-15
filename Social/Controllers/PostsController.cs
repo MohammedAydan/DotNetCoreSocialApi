@@ -129,6 +129,10 @@ namespace Social.API.Controllers
                 
                 // Get from database
                 var post = await _mediator.Send(new GetPostByIdQuery(postId, userId));
+                if (post == null)
+                {
+                    return ApiNotFound<object>("Post not found");
+                }
                 
                 // Cache for 5 minutes
                 await _cache.SetAsync(cacheKey, post, TimeSpan.FromMinutes(5));

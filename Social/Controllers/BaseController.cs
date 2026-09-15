@@ -11,6 +11,11 @@ namespace Social.API.Controllers
             return User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
         }
 
+        protected string? GetUserEmail()
+        {
+            return User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        }
+
         protected IActionResult ApiSuccess<T>(string message, T? data)
         {
             return Ok(ApiResponse<T>.SuccessResponse(message, data));

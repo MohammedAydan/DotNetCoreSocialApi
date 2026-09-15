@@ -333,6 +333,13 @@ namespace Social.Infrastructure.Repositories
                 if (!result.Succeeded)
                     throw new InvalidOperationException($"Failed to create 'Admin' role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
             }
+
+            if (!await _roleManager.RoleExistsAsync("Moderator"))
+            {
+                var result = await _roleManager.CreateAsync(new IdentityRole("Moderator"));
+                if (!result.Succeeded)
+                    throw new InvalidOperationException($"Failed to create 'Moderator' role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
         }
 
         public async Task<string> CreateRefreshTokenAsync(string userId, CancellationToken cancellationToken = default)
