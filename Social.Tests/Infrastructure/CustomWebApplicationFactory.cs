@@ -19,6 +19,8 @@ namespace Social.Tests.Infrastructure
         public IBlockUserRepository MockBlockUserRepository { get; } = Substitute.For<IBlockUserRepository>();
         public ITokenService MockTokenService { get; } = Substitute.For<ITokenService>();
         public ICacheService MockCacheService { get; } = Substitute.For<ICacheService>();
+        public IAdminRepository AdminRepositoryInstance { get; } = new TestAdminRepository();
+        public IAuditLogRepository AuditLogRepositoryInstance { get; } = new TestAuditLogRepository();
 
         static CustomWebApplicationFactory()
         {
@@ -34,6 +36,18 @@ namespace Social.Tests.Infrastructure
         {
             // Default mock behaviors
             MockTokenService.IsTokenBlacklistedAsync(Arg.Any<string>()).Returns(false);
+
+            MockPostRepository.GetPostByIdAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+                .Returns(callInfo =>
+                {
+                    var postId = callInfo.ArgAt<string>(0);
+                    var post = AdminRepositoryInstance.GetPostByIdAsync(postId).GetAwaiter().GetResult();
+                    if (post == null || post.IsDeleted)
+                    {
+                        return null!;
+                    }
+                    return post;
+                });
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -62,6 +76,8 @@ namespace Social.Tests.Infrastructure
                 ReplaceScoped(services, MockBlockUserRepository);
                 ReplaceScoped(services, MockTokenService);
                 ReplaceSingleton(services, MockCacheService);
+                ReplaceScoped(services, AdminRepositoryInstance);
+                ReplaceScoped(services, AuditLogRepositoryInstance);
 
                 // Configure test authentication
                 services.AddAuthentication(options =>

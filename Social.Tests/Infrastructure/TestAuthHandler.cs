@@ -22,6 +22,24 @@ namespace Social.Tests.Infrastructure
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            if (Request.Cookies.TryGetValue("admin_token", out var cookieToken) && !string.IsNullOrWhiteSpace(cookieToken))
+            {
+                var cookieRole = cookieToken.Contains("non-admin") ? "User" : "Admin";
+                var cookieClaims = new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, "admin-cookie-user"),
+                    new Claim(ClaimTypes.Name, "Admin Cookie User"),
+                    new Claim(ClaimTypes.Email, "admin@social.com"),
+                    new Claim(ClaimTypes.Role, cookieRole)
+                };
+
+                var cookieIdentity = new ClaimsIdentity(cookieClaims, "TestScheme");
+                var cookiePrincipal = new ClaimsPrincipal(cookieIdentity);
+                var cookieTicket = new AuthenticationTicket(cookiePrincipal, "TestScheme");
+
+                return Task.FromResult(AuthenticateResult.Success(cookieTicket));
+            }
+
             if (Request.Headers.TryGetValue("X-Anonymous", out var anonymous) && anonymous == "true")
             {
                 return Task.FromResult(AuthenticateResult.NoResult());
