@@ -42,6 +42,9 @@ namespace Social.API.Controllers.Admin
         [HttpGet("moderation")]
         public IActionResult Moderation() => RenderDashboard("moderation");
 
+        [HttpGet("reports")]
+        public IActionResult Reports() => RenderDashboard("reports");
+
         [HttpGet("audit-logs")]
         [HttpGet("audit")]
         public IActionResult AuditLogs() => RenderDashboard("audit");
@@ -49,6 +52,9 @@ namespace Social.API.Controllers.Admin
         [HttpGet("diagnostics")]
         [HttpGet("system")]
         public IActionResult Diagnostics() => RenderDashboard("diagnostics");
+
+        [HttpGet("docs")]
+        public IActionResult Docs() => RenderDashboard("docs");
 
         private IActionResult RenderDashboard(string activePage)
         {
@@ -179,45 +185,43 @@ namespace Social.API.Controllers.Admin
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - Social Admin Console</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/_content/Social.Admin.Web/css/admin-dashboard.css">
     <style>
         :root {
-            --bg-base: #0b0f19;
-            --bg-surface: #111827;
-            --bg-card: #1f2937;
-            --border-normal: #374151;
-            --text-primary: #f9fafb;
-            --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
-            --accent-blue: #3b82f6;
-            --accent-blue-hover: #2563eb;
-            --accent-rose: #f43f5e;
+            --bg-base: #F0F2F5;
+            --bg-surface: #FFFFFF;
+            --bg-input: #F0F2F5;
+            --border-normal: #E4E6EB;
+            --text-primary: #050505;
+            --text-secondary: #444950;
+            --text-muted: #65676B;
+            --accent-blue: #0866FF;
+            --accent-blue-hover: #0B5CE6;
+            --accent-rose: #F02849;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg-base); color: var(--text-primary); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
-        .login-card { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 12px; width: 100%; max-width: 440px; padding: 2.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); }
-        .login-header { text-align: center; margin-bottom: 2rem; }
-        .login-shield { font-size: 2.5rem; margin-bottom: 0.5rem; }
-        .login-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
-        .login-subtitle { font-size: 0.85rem; color: var(--text-muted); }
-        .form-group { margin-bottom: 1.25rem; }
-        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; }
-        .form-control { width: 100%; background-color: var(--bg-card); border: 1px solid var(--border-normal); color: var(--text-primary); padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.9rem; outline: none; transition: border-color 0.15s; }
-        .form-control:focus { border-color: var(--accent-blue); }
-        .btn-submit { width: 100%; background-color: var(--accent-blue); color: #fff; border: none; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background-color 0.15s; margin-top: 0.5rem; }
+        .login-card { background: var(--bg-surface); border: none; border-radius: 8px; width: 100%; max-width: 400px; padding: 1.5rem 1.25rem; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); }
+        .login-header { text-align: center; margin-bottom: 1.25rem; }
+        .login-shield { width: 64px; height: 64px; border-radius: 50%; background: var(--accent-blue); color: #fff; font-size: 1.75rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; }
+        .login-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .login-subtitle { font-size: 0.9375rem; color: var(--text-muted); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem; }
+        .form-control { width: 100%; background-color: var(--bg-input); border: none; color: var(--text-primary); padding: 0.65rem 0.9rem; border-radius: 6px; font-size: 0.9375rem; outline: none; }
+        .form-control:focus { box-shadow: 0 0 0 3px rgba(8, 102, 255, 0.25); }
+        .btn-submit { width: 100%; background-color: var(--accent-blue); color: #fff; border: none; padding: 0.65rem; border-radius: 6px; font-size: 0.9375rem; font-weight: 600; cursor: pointer; margin-top: 0.5rem; min-height: 40px; font-family: inherit; }
         .btn-submit:hover { background-color: var(--accent-blue-hover); }
+        .btn-submit:active { transform: scale(0.98); }
         .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-        .alert-error { background: rgba(244, 63, 94, 0.15); border: 1px solid var(--accent-rose); color: var(--accent-rose); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1.25rem; display: none; }
-        .login-footer { margin-top: 2rem; text-align: center; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-normal); padding-top: 1.25rem; }
+        .alert-error { background: rgba(240, 40, 73, 0.1); border: none; color: var(--accent-rose); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9375rem; margin-bottom: 1rem; display: none; }
+        .login-footer { margin-top: 1.25rem; text-align: center; font-size: 0.8125rem; color: var(--text-muted); border-top: 1px solid var(--border-normal); padding-top: 1rem; }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="login-header">
-            <div class="login-shield">🛡️</div>
+            <div class="login-shield">S</div>
             <h1 class="login-title">Social Admin Console</h1>
             <p class="login-subtitle">Platform Management & Observability Portal</p>
         </div>
@@ -312,15 +316,19 @@ namespace Social.API.Controllers.Admin
             var activeOverview = activePage == "overview" ? "active" : "";
             var activeUsers = activePage == "users" ? "active" : "";
             var activeModeration = activePage == "moderation" ? "active" : "";
+            var activeReports = activePage == "reports" ? "active" : "";
             var activeAudit = activePage == "audit" ? "active" : "";
             var activeDiagnostics = activePage == "diagnostics" ? "active" : "";
+            var activeDocs = activePage == "docs" ? "active" : "";
 
             var title = activePage switch
             {
                 "users" => "User & Identity Directory",
                 "moderation" => "Centralized Content Moderation",
+                "reports" => "Trust & Safety · Post Reports",
                 "audit" => "Administrative Audit Trail",
                 "diagnostics" => "System Observability & API Health",
+                "docs" => "Documentation · Admin Guide",
                 _ => "Platform Overview & Real-Time Analytics"
             };
 
@@ -332,228 +340,237 @@ namespace Social.API.Controllers.Admin
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}} - Social Admin Console</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/_content/Social.Admin.Web/css/admin-dashboard.css">
     <style>
         :root {
-            --bg-base: #09090b;
-            --bg-surface: #101014;
-            --bg-card: #18181d;
-            --bg-card-hover: #222229;
-            --border: rgba(255, 255, 255, 0.09);
-            --border-normal: rgba(255, 255, 255, 0.09);
-            --border-subtle: rgba(255, 255, 255, 0.055);
-            --text-primary: #fafafa;
-            --text-secondary: #a1a1aa;
-            --text-muted: #63636b;
-            --brand: #4f46e5;
-            --brand-hover: #4338ca;
-            --growth: #0d9488;
-            --alert: #e11d48;
-            --accent-blue: #4f46e5;
-            --accent-blue-hover: #4338ca;
-            --accent-emerald: #0d9488;
-            --accent-amber: #f59e0b;
-            --accent-rose: #e11d48;
-            --accent-indigo: #6366f1;
-            --accent-cyan: #06b6d4;
-            --accent-purple: #8b5cf6;
+            --bg-base: #F0F2F5;
+            --bg-surface: #FFFFFF;
+            --bg-card: #FFFFFF;
+            --bg-card-hover: #F5F6F7;
+            --bg-input: #F0F2F5;
+            --border: #E4E6EB;
+            --border-normal: #E4E6EB;
+            --border-subtle: #E4E6EB;
+            --text-primary: #050505;
+            --text-secondary: #444950;
+            --text-muted: #65676B;
+            --brand: #0866FF;
+            --brand-hover: #0B5CE6;
+            --nav-active-bg: #E7F3FF;
+            --growth: #31A24C;
+            --alert: #F02849;
+            --accent-blue: #0866FF;
+            --accent-blue-hover: #0B5CE6;
+            --accent-emerald: #31A24C;
+            --accent-amber: #9B6B00;
+            --accent-rose: #F02849;
+            --accent-indigo: #0866FF;
+            --accent-cyan: #0A7CFF;
+            --accent-purple: #7B4DFF;
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.1);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        [data-theme="dark"] {
+            --bg-base: #18191A;
+            --bg-surface: #242526;
+            --bg-card: #242526;
+            --bg-card-hover: #303031;
+            --bg-input: #3A3B3C;
+            --border: #3E4042;
+            --border-normal: #3E4042;
+            --border-subtle: #3E4042;
+            --text-primary: #E4E6EB;
+            --text-secondary: #C9CCD1;
+            --text-muted: #B0B3B8;
+            --brand: #2D88FF;
+            --brand-hover: #0A7CFF;
+            --nav-active-bg: rgba(45, 136, 255, 0.15);
+            --accent-blue: #2D88FF;
+            --accent-blue-hover: #0A7CFF;
+            --accent-emerald: #31A24C;
+            --accent-amber: #F7B928;
+            --accent-rose: #F02849;
+            --accent-indigo: #2D88FF;
+            --accent-cyan: #2D88FF;
+            --accent-purple: #9A7BFF;
             --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.35);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
         }
-        [data-theme="light"] {
-            --bg-base: #fafafa;
-            --bg-surface: #ffffff;
-            --bg-card: #f4f4f5;
-            --bg-card-hover: #e9e9ec;
-            --border: rgba(9, 9, 11, 0.1);
-            --border-normal: rgba(9, 9, 11, 0.12);
-            --border-subtle: rgba(9, 9, 11, 0.06);
-            --text-primary: #09090b;
-            --text-secondary: #52525b;
-            --text-muted: #a1a1aa;
-            --shadow-xs: 0 1px 2px rgba(9, 9, 11, 0.06);
-            --shadow-sm: 0 1px 3px rgba(9, 9, 11, 0.08), 0 1px 2px rgba(9, 9, 11, 0.06);
-        }
-        html { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
-        .metric-value, .admin-data-table td, .kpi-value, .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1, "cv02", "cv03"; letter-spacing: -0.01em; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        .metric-value, .admin-data-table td, .kpi-value, .tnum { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg-base); color: var(--text-primary); min-height: 100vh; display: flex; flex-direction: column; }
         .admin-shell { display: flex; min-height: 100vh; }
-        .admin-sidebar { width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border-normal); display: flex; flex-direction: column; }
-        .sidebar-brand { display: flex; align-items: center; gap: 0.75rem; padding: 1.5rem 1.25rem; border-bottom: 1px solid var(--border-subtle); text-decoration: none; }
-        .brand-title { font-weight: 700; font-size: 1.1rem; color: var(--text-primary); }
-        .brand-badge { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; }
-        .sidebar-nav { flex: 1; padding: 1.25rem 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
-        .nav-section-title { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); padding: 0.75rem 0.75rem 0.25rem; letter-spacing: 0.05em; }
-        .nav-item { text-decoration: none; background: none; border: none; color: var(--text-secondary); display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 0.85rem; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; text-align: left; transition: all 0.15s ease; }
-        .nav-item:hover { background-color: var(--bg-card); color: var(--text-primary); }
-        .nav-item.active { background-color: var(--accent-blue); color: #fff; }
+        .admin-sidebar { width: 280px; background-color: var(--bg-surface); display: flex; flex-direction: column; box-shadow: 1px 0 2px rgba(0, 0, 0, 0.06); }
+        .sidebar-brand { display: flex; align-items: center; gap: 0.6rem; padding: 1rem 1rem 0.85rem; border-bottom: 1px solid var(--border-subtle); text-decoration: none; }
+        .brand-mark { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.05rem; flex-shrink: 0; }
+        .brand-title { font-weight: 700; font-size: 1.05rem; color: var(--text-primary); }
+        .brand-badge { background: var(--nav-active-bg); color: var(--brand); font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 9999px; }
+        .sidebar-nav { flex: 1; padding: 0.75rem 0.5rem 1rem; display: flex; flex-direction: column; gap: 2px; }
+        .nav-section-title { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); padding: 1rem 0.75rem 0.3rem; }
+        .nav-item { text-decoration: none; background: none; border: none; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0.75rem; border-radius: 8px; font-size: 0.9375rem; font-weight: 500; cursor: pointer; text-align: left; transition: background-color 0.12s ease; }
+        .nav-item:hover { background-color: var(--bg-card-hover); color: var(--text-primary); }
+        .nav-item.active { background-color: var(--nav-active-bg); color: var(--brand); font-weight: 600; }
         .nav-icon { font-size: 1.1rem; }
         .admin-main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; }
-        .admin-navbar { background-color: var(--bg-surface); border-bottom: 1px solid var(--border-normal); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .navbar-left { display: flex; align-items: center; gap: 1rem; }
-        .page-title { font-size: 1.25rem; font-weight: 600; }
-        .live-indicator { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 500; }
-        .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--accent-emerald); }
-        .navbar-right { display: flex; align-items: center; gap: 1.25rem; }
+        .admin-navbar { background-color: var(--bg-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); padding: 0.6rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+        .navbar-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+        .page-title { font-size: 1.25rem; font-weight: 700; }
+        .navbar-search { display: flex; align-items: center; gap: 0.5rem; background: var(--bg-input); border: none; border-radius: 9999px; padding: 0.5rem 0.9rem; min-width: 180px; max-width: 300px; flex: 1; color: var(--text-muted); font-size: 0.9375rem; cursor: pointer; font-family: inherit; }
+        .navbar-search:hover { background: var(--bg-card-hover); }
+        .live-indicator { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--accent-emerald); background: rgba(49, 162, 76, 0.12); padding: 0.25rem 0.65rem; border-radius: 9999px; font-weight: 600; }
+        .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background-color: var(--accent-emerald); }
+        .navbar-right { display: flex; align-items: center; gap: 0.75rem; }
         .admin-profile { display: flex; align-items: center; gap: 0.75rem; }
-        .avatar-circle { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
-        .profile-name { font-size: 0.85rem; font-weight: 600; }
-        .profile-role { font-size: 0.7rem; color: var(--text-muted); }
-        .btn-openapi { background: var(--bg-card); border: 1px solid var(--border-normal); color: var(--text-secondary); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.75rem; text-decoration: none; font-weight: 500; }
-        .admin-content-area { flex: 1; padding: 1.75rem 2rem; overflow-y: auto; }
-        .stats-overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
-        .metric-card { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; transition: transform 0.15s ease; }
-        .metric-card:hover { transform: translateY(-2px); border-color: var(--accent-blue); }
+        .avatar-circle { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; }
+        .profile-name { font-size: 0.9375rem; font-weight: 600; }
+        .profile-role { font-size: 0.8125rem; color: var(--text-muted); }
+        .btn-openapi { background: var(--bg-input); border: none; color: var(--text-primary); padding: 0.5rem 0.9rem; border-radius: 9999px; font-size: 0.8125rem; text-decoration: none; font-weight: 600; }
+        .admin-content-area { flex: 1; padding: 1.25rem 1.5rem; overflow-y: auto; }
+        .stats-overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .metric-card { background: var(--bg-surface); border: none; border-radius: 8px; padding: 1rem 1.25rem; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
         .metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-        .metric-title { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; }
+        .metric-title { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 600; }
         .metric-value { font-size: 1.75rem; font-weight: 700; }
-        .metric-subtitle { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
-        .panel-card { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-        .panel-title { font-size: 1.1rem; font-weight: 600; }
-        .filter-toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.5rem; align-items: center; }
+        .metric-subtitle { font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.15rem; }
+        .panel-card { background: var(--bg-surface); border: none; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .panel-title { font-size: 1.0625rem; font-weight: 700; }
+        .filter-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; align-items: center; }
         .search-box { display: flex; gap: 0.5rem; flex: 1; min-width: 240px; }
-        .form-control, .form-select { background-color: var(--bg-card); border: 1px solid var(--border-normal); color: var(--text-primary); padding: 0.5rem 0.85rem; border-radius: 6px; font-size: 0.875rem; outline: none; }
-        .form-control:focus, .form-select:focus { border-color: var(--accent-blue); }
-        .admin-data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; }
-        .admin-data-table th { padding: 0.85rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-normal); font-weight: 600; }
-        .admin-data-table td { padding: 1rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
-        .admin-data-table tbody tr:hover { background-color: rgba(255, 255, 255, 0.02); }
-        .status-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.55rem; border-radius: 9999px; font-size: 0.725rem; font-weight: 600; }
-        .badge-success { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); }
-        .badge-danger { background: rgba(244, 63, 94, 0.15); color: var(--accent-rose); }
-        .badge-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
-        .badge-info { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-        .badge-purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
-        .btn { padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.8rem; font-weight: 500; cursor: pointer; border: none; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
-        .btn-primary { background-color: var(--accent-blue); color: #fff; }
-        .btn-secondary { background-color: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border-normal); }
+        .form-control, .form-select { background-color: var(--bg-input); border: none; color: var(--text-primary); padding: 0.6rem 0.9rem; border-radius: 6px; font-size: 0.9375rem; outline: none; font-family: inherit; }
+        .form-control:focus, .form-select:focus { box-shadow: 0 0 0 3px rgba(8, 102, 255, 0.25); }
+        .admin-data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9375rem; }
+        .admin-data-table th { padding: 0.7rem 1rem; font-size: 0.75rem; color: var(--text-muted); border-bottom: 1px solid var(--border-normal); font-weight: 600; }
+        .admin-data-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+        .admin-data-table tbody tr:hover { background-color: var(--bg-card-hover); }
+        .status-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.8125rem; font-weight: 600; }
+        .badge-success { background: rgba(49, 162, 76, 0.14); color: var(--accent-emerald); }
+        .badge-danger { background: rgba(240, 40, 73, 0.12); color: var(--accent-rose); }
+        .badge-warning { background: rgba(247, 185, 40, 0.2); color: var(--accent-amber); }
+        .badge-info { background: var(--nav-active-bg); color: var(--brand); }
+        .badge-purple { background: rgba(123, 77, 255, 0.12); color: var(--accent-purple); }
+        .btn { padding: 0.55rem 1rem; border-radius: 6px; font-size: 0.9375rem; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 36px; font-family: inherit; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background-color: var(--brand); color: #fff; }
+        .btn-primary:hover { background-color: var(--brand-hover); }
+        .btn-secondary { background-color: var(--bg-input); color: var(--text-primary); }
+        .btn-secondary:hover { background-color: var(--bg-card-hover); }
         .btn-danger { background-color: var(--accent-rose); color: #fff; }
         .btn-success { background-color: var(--accent-emerald); color: #fff; }
-        .btn-table-action { background: var(--bg-card); border: 1px solid var(--border-normal); color: var(--text-secondary); padding: 0.25rem 0.55rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
-        .btn-table-action:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+        .btn-table-action { background: var(--bg-input); border: none; color: var(--text-primary); padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .btn-table-action:hover { background: var(--bg-card-hover); }
         
-        /* Modern Moderation Feed Layout & View Modes */
-        .moderation-stream { display: flex; flex-direction: column; gap: 1.5rem; max-width: 780px; margin: 0 auto; width: 100%; }
-        .moderation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.25rem; align-items: start; }
+        /* FB Feed Layout & View Modes */
+        .moderation-stream { display: flex; flex-direction: column; gap: 1rem; max-width: 744px; margin: 0 auto; width: 100%; }
+        .moderation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1rem; align-items: start; }
         .moderation-list { width: 100%; overflow-x: auto; }
-        
-        .mod-card { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 12px; display: flex; flex-direction: column; transition: border-color 0.2s ease, box-shadow 0.2s ease; overflow: hidden; position: relative; }
-        .mod-card:hover { border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.2); }
-        .mod-card.is-hidden { border-color: rgba(244, 63, 94, 0.35); background: linear-gradient(180deg, rgba(244, 63, 94, 0.04) 0%, var(--bg-surface) 100%); }
-        
-        .mod-card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.015); }
+        .mod-card { background: var(--bg-surface); border: none; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); overflow: hidden; position: relative; }
+        .mod-card.is-hidden { border: 1px dashed var(--accent-rose); }
+        .mod-card-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; }
         .mod-author-info { display: flex; align-items: center; gap: 0.75rem; }
-        .mod-author-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: #fff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); flex-shrink: 0; }
-        .mod-author-name { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.35rem; }
-        .mod-time-wrapper { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
-        .mod-time-pill { background: rgba(255, 255, 255, 0.07); padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 500; color: var(--text-secondary); }
-        
-        .mod-card-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; gap: 0.85rem; }
-        .mod-post-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); line-height: 1.35; }
+        .mod-author-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-input); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; color: var(--text-primary); flex-shrink: 0; }
+        .mod-author-name { font-weight: 600; font-size: 0.9375rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.35rem; }
+        .mod-time-wrapper { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.1rem; }
+        .mod-time-pill { background: var(--bg-input); padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); }
+        .mod-card-body { padding: 0.75rem 1rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+        .mod-post-title { font-size: 1.0625rem; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
         .mod-post-content-container { position: relative; }
-        .mod-post-text { font-size: 0.9rem; color: #d1d5db; line-height: 1.6; white-space: pre-wrap; word-break: break-word; unicode-bidi: plaintext; }
+        .mod-post-text { font-size: 0.9375rem; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; word-break: break-word; unicode-bidi: plaintext; }
         .mod-post-text.clamped { max-height: 180px; overflow: hidden; mask-image: linear-gradient(to bottom, black 65%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 65%, transparent 100%); }
-        .btn-text-expand { background: none; border: none; color: var(--accent-blue); font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-top: 0.35rem; padding: 0; display: inline-flex; align-items: center; gap: 0.25rem; }
-        .btn-text-expand:hover { text-decoration: underline; color: #60a5fa; }
-        .mod-code-snippet { background: #090d16; border: 1px solid var(--border-normal); border-radius: 8px; padding: 0.75rem 1rem; font-family: 'JetBrains Mono', Consolas, Monaco, monospace; font-size: 0.8rem; color: #93c5fd; overflow-x: auto; margin: 0.5rem 0; }
-        
+        .btn-text-expand { background: none; border: none; color: var(--brand); font-size: 0.9375rem; font-weight: 600; cursor: pointer; margin-top: 0.35rem; padding: 0; display: inline-flex; align-items: center; gap: 0.25rem; font-family: inherit; }
+        .btn-text-expand:hover { text-decoration: underline; }
+        .mod-code-snippet { background: #1C1E21; border: none; border-radius: 8px; padding: 0.75rem 1rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.8125rem; color: #E4E6EB; overflow-x: auto; margin: 0.5rem 0; }
         /* Modern Media Layouts */
-        .mod-media-single { width: 100%; max-height: 380px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-normal); position: relative; cursor: pointer; background: #000; }
+        .mod-media-single { width: 100%; max-height: 380px; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; background: #000; }
         .mod-media-hero { width: 100%; height: 100%; max-height: 380px; object-fit: cover; display: block; transition: transform 0.25s ease; }
         .mod-media-single:hover .mod-media-hero { transform: scale(1.02); }
-        .mod-media-double { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; border-radius: 8px; overflow: hidden; }
+        .mod-media-double { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; border-radius: 8px; overflow: hidden; }
         .mod-media-half { aspect-ratio: 16/10; overflow: hidden; background: #000; position: relative; cursor: pointer; }
         .mod-media-half img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s ease; }
         .mod-media-half:hover img { transform: scale(1.04); }
-        .mod-media-mosaic { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; border-radius: 8px; overflow: hidden; }
+        .mod-media-mosaic { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; border-radius: 8px; overflow: hidden; }
         .mod-media-cell { aspect-ratio: 1/1; overflow: hidden; background: #000; position: relative; cursor: pointer; }
         .mod-media-cell img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s ease; }
         .mod-media-cell:hover img { transform: scale(1.04); }
-        .mod-media-more-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; backdrop-filter: blur(2px); }
-        .mod-video-box { width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-normal); background: #000; margin-top: 0.25rem; }
+        .mod-media-more-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; }
+        .mod-video-box { width: 100%; border-radius: 8px; overflow: hidden; background: #000; margin-top: 0.25rem; }
         .mod-video-player { width: 100%; max-height: 360px; display: block; }
-        
-        .mod-card-footer { padding: 0.85rem 1.25rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.18); font-size: 0.75rem; }
-        .mod-metrics-bar { display: flex; gap: 0.85rem; color: var(--text-muted); font-size: 0.75rem; }
-        .mod-actions-bar { display: flex; gap: 0.4rem; align-items: center; }
-        
+        .mod-card-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; font-size: 0.9375rem; color: var(--text-muted); }
+        .mod-metrics-bar { display: flex; gap: 0.25rem; color: var(--text-muted); font-size: 0.9375rem; font-weight: 600; }
+        .mod-actions-bar { display: flex; gap: 0.5rem; align-items: center; }
         /* Stats Pills & View Switcher */
         .mod-pills-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-        .stat-pill { background: var(--bg-card); border: 1px solid var(--border-normal); border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.15s ease; user-select: none; }
-        .stat-pill:hover, .stat-pill.active { background: rgba(59, 130, 246, 0.15); border-color: var(--accent-blue); color: #fff; }
-        .stat-pill-count { background: rgba(255, 255, 255, 0.1); padding: 0.1rem 0.45rem; border-radius: 9999px; font-weight: 700; font-size: 0.72rem; }
-        .view-switcher { display: flex; background: var(--bg-card); border: 1px solid var(--border-normal); border-radius: 6px; padding: 2px; gap: 2px; }
-        .view-btn { background: none; border: none; color: var(--text-secondary); padding: 0.3rem 0.65rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 0.35rem; transition: all 0.15s ease; }
-        .view-btn.active { background: var(--accent-blue); color: #fff; }
+        .stat-pill { background: var(--bg-input); border: none; border-radius: 9999px; padding: 0.4rem 0.8rem; font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; font-family: inherit; }
+        .stat-pill:hover, .stat-pill.active { background: var(--nav-active-bg); color: var(--brand); }
+        .stat-pill-count { background: rgba(0, 0, 0, 0.06); padding: 0.05rem 0.45rem; border-radius: 9999px; font-weight: 700; font-size: 0.8125rem; }
+        .view-switcher { display: flex; background: var(--bg-input); border: none; border-radius: 9999px; padding: 3px; gap: 2px; }
+        .view-btn { background: none; border: none; color: var(--text-secondary); padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.8125rem; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.35rem; font-family: inherit; }
+        .view-btn.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
         
-        .admin-footer { background: var(--bg-surface); border-top: 1px solid var(--border-normal); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); }
-        .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-        .modal-dialog { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 12px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 1.75rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; }
-        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
-        .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
-        .toast { background: var(--bg-surface); border: 1px solid var(--border-normal); padding: 0.75rem 1.25rem; border-radius: 8px; color: var(--text-primary); font-size: 0.85rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 0.75rem; animation: slideIn 0.2s ease-out; }
+        .admin-footer { background: var(--bg-surface); box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.06); padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: var(--text-muted); }
+        .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+        .modal-dialog { background: var(--bg-surface); border: none; border-radius: 8px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 1.25rem; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; }
+        .modal-close { background: var(--bg-input); border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; font-family: inherit; }
+        .modal-close:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); font-size: 0.9375rem; color: var(--text-secondary); }
+        .toast { background: var(--bg-surface); border: none; border-left: 4px solid var(--brand); padding: 0.75rem 1rem; border-radius: 8px; color: var(--text-primary); font-size: 0.9375rem; box-shadow: 0 4px 16px rgba(0,0,0,0.14); display: flex; align-items: center; gap: 0.75rem; animation: slideIn 0.2s ease-out; }
         /* Enterprise Analytics Layer: KPI ribbon, charts, shell widgets */
-        .admin-shell.sidebar-collapsed .admin-sidebar { width: 64px; }
+        .admin-shell.sidebar-collapsed .admin-sidebar { width: 76px; }
         .admin-shell.sidebar-collapsed .admin-sidebar .brand-title,
         .admin-shell.sidebar-collapsed .admin-sidebar .brand-badge,
         .admin-shell.sidebar-collapsed .admin-sidebar .nav-section-title,
-        .admin-shell.sidebar-collapsed .admin-sidebar .nav-item span:last-child { display: none; }
-        .env-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; color: #0d9488; background: rgba(13, 148, 136, 0.12); border: 1px solid rgba(13, 148, 136, 0.35); padding: 0.2rem 0.55rem; border-radius: 9999px; }
-        .env-badge.degraded { color: #e11d48; background: rgba(225, 29, 72, 0.12); border-color: rgba(225, 29, 72, 0.35); }
-        .range-switcher { display: flex; background: var(--bg-card); border: 1px solid var(--border-normal); border-radius: 8px; padding: 2px; gap: 2px; }
-        .range-btn { background: none; border: none; color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.65rem; border-radius: 6px; cursor: pointer; }
-        .range-btn.active { background: var(--brand); color: #fff; }
-        .cmdk-btn { background: var(--bg-card); border: 1px solid var(--border-normal); color: var(--text-secondary); padding: 0.4rem 0.7rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; }
+        .admin-shell.sidebar-collapsed .admin-sidebar .nav-item span:last-child,
+        .admin-shell.sidebar-collapsed .admin-sidebar .navbar-search { display: none; }
+        .env-badge { font-size: 0.72rem; font-weight: 600; color: var(--accent-emerald); background: rgba(49, 162, 76, 0.12); padding: 0.25rem 0.6rem; border-radius: 9999px; }
+        .env-badge.degraded { color: var(--accent-rose); background: rgba(240, 40, 73, 0.12); }
+        .range-switcher { display: flex; background: var(--bg-input); border: none; border-radius: 9999px; padding: 3px; gap: 2px; }
+        .range-btn { background: none; border: none; color: var(--text-secondary); font-size: 0.8125rem; font-weight: 600; padding: 0.35rem 0.8rem; border-radius: 9999px; cursor: pointer; font-family: inherit; }
+        .range-btn.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+        .cmdk-btn { background: var(--bg-input); border: none; color: var(--text-primary); padding: 0.5rem 0.8rem; border-radius: 9999px; font-size: 0.8125rem; font-weight: 500; cursor: pointer; display: flex; gap: 0.5rem; align-items: center; font-family: inherit; }
         .cmdk-hint { color: var(--text-muted); }
-        .theme-btn { background: var(--bg-card); border: 1px solid var(--border-normal); color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; }
-        .profile-menu { display: none; position: absolute; right: 0; top: 44px; background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 10px; min-width: 180px; box-shadow: var(--shadow-sm); z-index: 50; overflow: hidden; }
+        .theme-btn { background: var(--bg-input); border: none; color: var(--text-primary); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-family: inherit; }
+        .profile-menu { display: none; position: absolute; right: 0; top: 44px; background: var(--bg-surface); border: none; border-radius: 8px; min-width: 200px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); z-index: 50; overflow: hidden; padding: 0.5rem; }
         .profile-menu.open { display: block; }
-        .profile-menu a { display: block; padding: 0.65rem 1rem; font-size: 0.82rem; color: var(--text-secondary); text-decoration: none; }
-        .profile-menu a:hover { background: var(--bg-card); color: var(--text-primary); }
-        .cmdk-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); z-index: 100; justify-content: center; padding-top: 12vh; }
+        .profile-menu a { display: block; padding: 0.55rem 0.75rem; border-radius: 6px; font-size: 0.9375rem; font-weight: 500; color: var(--text-primary); text-decoration: none; }
+        .profile-menu a:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .cmdk-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; padding-top: 12vh; }
         .cmdk-backdrop.open { display: flex; }
-        .cmdk-dialog { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 12px; width: min(560px, 92vw); height: fit-content; max-height: 60vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
+        .cmdk-dialog { background: var(--bg-surface); border: none; border-radius: 8px; width: min(560px, 92vw); height: fit-content; max-height: 60vh; overflow: hidden; box-shadow: 0 12px 28px rgba(0,0,0,0.2); }
         .cmdk-dialog .form-control { border: none; border-bottom: 1px solid var(--border-normal); border-radius: 0; padding: 0.9rem 1.1rem; width: 100%; }
-        .cmdk-item { padding: 0.7rem 1.1rem; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; display: flex; justify-content: space-between; }
-        .cmdk-item:hover { background: var(--bg-card); color: var(--text-primary); }
-        .kpi-ribbon { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-        .kpi-card { background: var(--bg-surface); border: 1px solid var(--border-normal); border-radius: 12px; padding: 1.25rem 1.5rem; box-shadow: var(--shadow-xs); transition: border-color 0.15s ease, transform 0.15s ease; }
-        .kpi-card:hover { border-color: rgba(79, 70, 229, 0.55); transform: translateY(-1px); }
-        .kpi-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
-        .kpi-value { font-size: 1.9rem; font-weight: 700; margin: 0.25rem 0; font-family: 'Inter', system-ui, sans-serif; }
-        .kpi-delta { font-size: 0.75rem; font-weight: 600; }
+        .cmdk-item { padding: 0.6rem 1rem; font-size: 0.9375rem; color: var(--text-primary); cursor: pointer; display: flex; justify-content: space-between; }
+        .cmdk-item:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .kpi-ribbon { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .kpi-card { background: var(--bg-surface); border: none; border-radius: 8px; padding: 1rem 1.25rem; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+        .kpi-label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
+        .kpi-value { font-size: 1.9rem; font-weight: 700; margin: 0.25rem 0; }
+        .kpi-delta { font-size: 0.8125rem; font-weight: 600; }
         .kpi-delta.up { color: var(--growth); }
         .kpi-delta.down { color: var(--alert); }
         .kpi-delta.flat { color: var(--text-muted); }
         .kpi-spark { margin-top: 0.5rem; opacity: 0.9; }
-        .chart-grid { display: grid; grid-template-columns: 65% 35%; gap: 1rem; margin-bottom: 1.5rem; }
+        .chart-grid { display: grid; grid-template-columns: 65% 35%; gap: 1rem; margin-bottom: 1rem; }
         @media (max-width: 1024px) { .chart-grid { grid-template-columns: 1fr; } }
         .chart-box { position: relative; height: 280px; }
         .chart-box canvas { max-height: 280px; }
         .latency-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-        .latency-cell { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0.9rem 1rem; }
+        .latency-cell { background: var(--bg-input); border: none; border-radius: 8px; padding: 0.9rem 1rem; }
         .latency-cell .kpi-value { font-size: 1.4rem; }
-        .method-badge { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 5px; letter-spacing: 0.03em; }
-        .method-GET { background: rgba(13, 148, 136, 0.15); color: #14b8a6; }
-        .method-POST { background: rgba(79, 70, 229, 0.16); color: #818cf8; }
-        .method-PUT, .method-PATCH { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-        .method-DELETE { background: rgba(225, 29, 72, 0.15); color: #fb7185; }
-        .privacy-meter { height: 12px; border-radius: 9999px; overflow: hidden; display: flex; background: var(--bg-card); border: 1px solid var(--border-subtle); }
-        .privacy-meter .seg-private { background: linear-gradient(90deg, #4f46e5, #818cf8); }
-        .privacy-meter .seg-public { background: rgba(13, 148, 136, 0.7); }
+        .method-badge { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 9999px; }
+        .method-GET { background: rgba(49, 162, 76, 0.14); color: var(--accent-emerald); }
+        .method-POST { background: var(--nav-active-bg); color: var(--brand); }
+        .method-PUT, .method-PATCH { background: rgba(247, 185, 40, 0.2); color: var(--accent-amber); }
+        .method-DELETE { background: rgba(240, 40, 73, 0.12); color: var(--accent-rose); }
+        .privacy-meter { height: 10px; border-radius: 9999px; overflow: hidden; display: flex; background: var(--bg-input); }
+        .privacy-meter .seg-private { background: var(--brand); }
+        .privacy-meter .seg-public { background: var(--accent-emerald); }
         .table-wrap { overflow-x: auto; }
-        .panel-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: -0.75rem; margin-bottom: 1rem; }
+        .panel-sub { font-size: 0.8125rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem; }
         @media (max-width: 768px) {
-            .admin-sidebar { position: fixed; z-index: 60; height: 100vh; transform: translateX(0); }
-            .admin-shell.sidebar-collapsed .admin-sidebar { transform: translateX(-100%); width: 260px; }
+            .admin-sidebar { position: fixed; z-index: 60; height: 100vh; transform: translateX(0); width: 280px; }
+            .admin-shell.sidebar-collapsed .admin-sidebar { transform: translateX(-100%); width: 280px; }
             .admin-content-area { padding: 1rem; }
-            .navbar-right .cmdk-hint, .navbar-right .btn-openapi { display: none; }
+            .navbar-right .cmdk-hint, .navbar-right .btn-openapi, .navbar-search { display: none; }
         }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
@@ -562,7 +579,7 @@ namespace Social.API.Controllers.Admin
     <div class="admin-shell">
         <aside class="admin-sidebar">
             <a href="/admin" class="sidebar-brand">
-                <span style="font-size: 1.4rem;">🛡️</span>
+                <span class="brand-mark">S</span>
                 <span class="brand-title">Social Admin</span>
                 <span class="brand-badge">PRO</span>
             </a>
@@ -594,6 +611,10 @@ namespace Social.API.Controllers.Admin
                     <span class="nav-icon">🛡️</span>
                     <span>Moderation & Safety</span>
                 </a>
+                <a href="/admin/reports" id="nav-reports" class="nav-item {{activeReports}}" onclick="navigateTab(event,'reports','/admin/reports')">
+                    <span class="nav-icon">🚩</span>
+                    <span>Reported Posts</span>
+                </a>
                 <div class="nav-section-title">INFRASTRUCTURE</div>
                 <a href="/admin/system" id="nav-diagnostics" class="nav-item {{activeDiagnostics}}" onclick="navigateTab(event, 'diagnostics', '/admin/system')">
                     <span class="nav-icon">⚡</span>
@@ -607,15 +628,23 @@ namespace Social.API.Controllers.Admin
                     <span class="nav-icon">💚</span>
                     <span>System Health</span>
                 </a>
+                <div class="nav-section-title">DOCUMENTATION</div>
+                <a href="/admin/docs" id="nav-docs" class="nav-item {{activeDocs}}" onclick="navigateTab(event, 'docs', '/admin/docs')">
+                    <span class="nav-icon">📚</span>
+                    <span>Documentation</span>
+                </a>
             </nav>
-            <div style="padding:0.75rem; border-top:1px solid var(--border-subtle);">
-                <button class="btn btn-secondary" style="width:100%;" onclick="document.querySelector('.admin-shell').classList.toggle('sidebar-collapsed')" title="Collapse sidebar">⇔ Collapse</button>
+            <div style="padding:0.75rem 0.5rem; border-top:1px solid var(--border-subtle);">
+                <button class="collapse-toggle" onclick="document.querySelector('.admin-shell').classList.toggle('sidebar-collapsed')" title="Collapse sidebar">⇔ Collapse</button>
             </div>
         </aside>
         <div class="admin-main-wrapper">
             <header class="admin-navbar">
                 <div class="navbar-left">
                     <h1 class="page-title" id="page-title-heading">{{title}}</h1>
+                    <button class="navbar-search" onclick="openCommandPalette()" title="Search admin console (Ctrl/⌘ + K)">
+                        <span>⌕</span><span>Search…</span>
+                    </button>
                     <span class="env-badge" id="env-badge" title="Deployment environment">PRODUCTION</span>
                     <span class="live-indicator" id="health-heartbeat" title="Cluster health (polls diagnostics every 30s)">
                         <span class="pulse-dot" id="health-dot"></span>
@@ -638,6 +667,7 @@ namespace Social.API.Controllers.Admin
                         </div>
                         <div class="profile-menu" id="profile-menu">
                             <a href="/openapi/v1.json" target="_blank">📄 API Docs</a>
+                            <a href="/admin/docs">📚 Documentation</a>
                             <a href="/admin/logout">⏻ Sign Out</a>
                         </div>
                     </div>
@@ -896,6 +926,67 @@ namespace Social.API.Controllers.Admin
                     </div>
                 </div>
 
+                <!-- Reports Tab -->
+                <div id="tab-reports" style="display: {{ (activePage == "reports" ? "block" : "none") }};">
+                    <div class="mod-pills-bar">
+                        <div class="stat-pill active" id="report-pill-all" onclick="selectReportStatus('')">
+                            <span>🚩 All Reports</span>
+                        </div>
+                        <div class="stat-pill" id="report-pill-pending" onclick="selectReportStatus('Pending')">
+                            <span>⏳ Pending</span>
+                        </div>
+                        <div class="stat-pill" id="report-pill-dismissed" onclick="selectReportStatus('Dismissed')">
+                            <span>✔️ Dismissed</span>
+                        </div>
+                        <div class="stat-pill" id="report-pill-actioned" onclick="selectReportStatus('Actioned')">
+                            <span>🛡️ Actioned</span>
+                        </div>
+                    </div>
+
+                    <div class="filter-toolbar">
+                        <div class="search-box">
+                            <input type="text" id="reports-search-input" class="form-control" placeholder="Search by post id, reporter, or reason..." onkeyup="if(event.key==='Enter') searchReports()" />
+                            <button class="btn btn-primary" onclick="searchReports()">Search</button>
+                        </div>
+                        <button class="btn btn-secondary" onclick="loadReports()">&#8635; Refresh</button>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-header">
+                            <div>
+                                <h2 class="panel-title">Trust & Safety · Reported Posts Queue</h2>
+                                <span style="font-size:0.8rem; color:var(--text-muted);" id="reports-count-summary">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                        <table class="admin-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Report</th>
+                                    <th>Post</th>
+                                    <th>Reporter</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Reported At</th>
+                                    <th>Open×</th>
+                                    <th style="text-align:right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body">
+                                <tr><td colspan="8" style="text-align:center;">Loading report queue...</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
+                        <div class="pagination-bar">
+                            <span style="font-size:0.8rem; color:var(--text-muted);" id="reports-page-info">Showing page 1</span>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button class="btn btn-secondary" id="btn-reports-prev" onclick="changeReportsPage(-1)" disabled>&larr; Previous</button>
+                                <button class="btn btn-secondary" id="btn-reports-next" onclick="changeReportsPage(1)" disabled>Next &rarr;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Audit Logs Tab -->
                 <div id="tab-audit" style="display: {{ (activePage == "audit" ? "block" : "none") }};">
                     <div class="panel-card">
@@ -1012,6 +1103,109 @@ namespace Social.API.Controllers.Admin
                             <div><strong>Database Seeder:</strong> <span class="status-badge badge-success">Auto-Migrated</span></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Documentation Tab -->
+                <div id="tab-docs" style="display: {{ (activePage == "docs" ? "block" : "none") }};">
+                    <div class="panel-card">
+                        <div class="panel-header">
+                            <div>
+                                <h2 class="panel-title">📚 Admin Guide & Platform Documentation</h2>
+                                <span style="font-size:0.8rem; color:var(--text-muted);">Curated summaries of every console area. Full detail lives in the repo <code>docs/</code> folder.</span>
+                            </div>
+                            <span class="status-badge badge-info tnum">83 ops · 76 paths · 11 tags</span>
+                        </div>
+                        <div class="filter-toolbar">
+                            <div class="search-box">
+                                <input type="text" id="docs-search" class="form-control" placeholder="Filter articles (e.g. moderation, sdk, deploy)..." oninput="filterDocs()" autocomplete="off" />
+                            </div>
+                            <button class="btn btn-secondary" onclick="document.getElementById('docs-search').value='';filterDocs();">Reset</button>
+                        </div>
+                        <nav class="docs-nav" aria-label="Documentation sections" style="position:sticky; top:0; z-index:5; display:flex; flex-wrap:wrap; gap:0.5rem; padding:0.75rem 0; background:var(--bg-surface);">
+                            <a class="stat-pill" href="#docs-overview">Overview</a>
+                            <a class="stat-pill" href="#docs-users">User Intelligence</a>
+                            <a class="stat-pill" href="#docs-moderation">Moderation & Safety</a>
+                            <a class="stat-pill" href="#docs-reports">Reported Posts</a>
+                            <a class="stat-pill" href="#docs-audit">Audit Trail</a>
+                            <a class="stat-pill" href="#docs-observability">Observability</a>
+                            <a class="stat-pill" href="#docs-api">API Reference</a>
+                            <a class="stat-pill" href="#docs-web-sdk">Web SDK</a>
+                            <a class="stat-pill" href="#docs-mobile-sdk">Mobile SDK</a>
+                            <a class="stat-pill" href="#docs-runbooks">Runbooks & Deploy</a>
+                        </nav>
+                    </div>
+                    <div class="docs-layout" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.25rem;">
+                        <article class="panel-card docs-article" id="docs-overview" data-title="overview executive dashboard kpi traffic velocity" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">📊 Overview · Executive Dashboard</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Real-time KPIs (DAU, signups, interactions, P95 latency, error rate), growth trends, live-traffic anomaly stream, and platform velocity. Use the 7D / 30D range switcher to re-window analytics.</p>
+                            <div style="margin-top:0.85rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <button class="btn btn-secondary" onclick="navigateTab(event, 'overview', '/admin/dashboard')">Open Overview</button>
+                            </div>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-users" data-title="users user intelligence directory growth cohorts privacy blocks" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">👥 User Intelligence</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Searchable identity directory, signup growth & retention chart, private/public privacy ratio, and block-network density for spotting bad actors. Ban, verify, and role changes are admin-only and audit-logged.</p>
+                            <div style="margin-top:0.85rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <button class="btn btn-secondary" onclick="navigateTab(event, 'users', '/admin/users')">Open User Intelligence</button>
+                            </div>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-moderation" data-title="moderation safety content hide restore visibility stream grid list" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">🛡️ Moderation & Safety</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Centralized review feed for posts and comments (stream / grid / list views, media-aware). Hide or restore with a reason; affected users are notified. Posts are soft-deleted only — never physically removed.</p>
+                            <div style="margin-top:0.85rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <button class="btn btn-secondary" onclick="navigateTab(event, 'moderation', '/admin/moderation')">Open Moderation</button>
+                            </div>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-reports" data-title="reports reported posts trust safety triage pending dismissed actioned" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">🚩 Reported Posts</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Trust & safety triage queue: pending, dismissed, and actioned reports with reporter, reason, and timestamps. Search by post id, reporter, or reason; actions feed the moderation pipeline.</p>
+                            <div style="margin-top:0.85rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <button class="btn btn-secondary" onclick="navigateTab(event, 'reports', '/admin/reports')">Open Reported Posts</button>
+                            </div>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-audit" data-title="audit trail admin actions accountability who did what" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">📜 Audit Trail</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Immutable log of administrator actions: who did what, to which entity, when (UTC), and why. Every ban, role change, hide/restore, and verify lands here. Paginated, newest first.</p>
+                            <div style="margin-top:0.85rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <button class="btn btn-secondary" onclick="navigateTab(event, 'audit', '/admin/audit-logs')">Open Audit Trail</button>
+                            </div>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-observability" data-title="observability diagnostics system health latency endpoints telemetry heartbeat" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">⚡ Observability · Diagnostics & Health</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Latency distribution (P50–P99), top-endpoints matrix, live request stream (15s poll), process memory, and cache engine. The navbar heartbeat polls diagnostics every 30s.</p>
+                            <div style="margin-top:0.85rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <button class="btn btn-secondary" onclick="navigateTab(event, 'diagnostics', '/admin/system')">Open Observability</button>
+                            </div>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-api" data-title="api reference openapi operations paths tags envelope errors auth" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">🔌 API Reference</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">83 operations across 76 paths and 11 tags (Posts, Comments, Like, Follow, BlockUser, Notifications, User, AdminAnalytics, AdminAuditLogs, AdminModeration, AdminUsers). Bearer-only auth; every response uses the <code>success / message / data / errors</code> envelope.</p>
+                            <div style="margin-top:0.85rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <a class="btn btn-secondary" href="/openapi/v1.json" target="_blank" style="text-decoration:none;">OpenAPI JSON</a>
+                            </div>
+                            <p class="panel-sub" style="margin-top:0.6rem; margin-bottom:0;">Deep dive: <code>docs/API_REFERENCE.md</code> · <code>docs/ARCHITECTURE.md</code></p>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-web-sdk" data-title="web sdk typescript react hooks generator" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">🌐 Web SDK (TypeScript)</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Generated React Query hooks live in <code>sdks/web</code> (source: <code>sdks/generator</code>). Hook names follow <code>use</code> + Method + Path (e.g. <code>useGetApiPostsFeed</code>); all responses type as <code>void</code> — cast to the envelope. Never hand-edit generated trees.</p>
+                            <p class="panel-sub" style="margin-top:0.6rem; margin-bottom:0;">Deep dive: <code>docs/SDK_WEB.md</code></p>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-mobile-sdk" data-title="mobile sdk dart flutter client factory" style="margin-bottom:0;">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">📱 Mobile SDK (Dart / Flutter)</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Generated client in <code>sdks/mobile/social_api_client</code> (factory source: <code>sdk-assets/</code>). Run <code>flutter analyze</code> inside the client package after regen. Never edit <code>lib/src/**</code> or <code>.g.dart</code> by hand.</p>
+                            <p class="panel-sub" style="margin-top:0.6rem; margin-bottom:0;">Deep dive: <code>docs/SDK_MOBILE.md</code></p>
+                        </article>
+                        <article class="panel-card docs-article" id="docs-runbooks" data-title="runbooks deploy migrations database release pipeline tooling" style="margin-bottom:0; border-color:rgba(225, 29, 72, 0.4);">
+                            <h3 class="panel-title" style="margin-bottom:0.5rem;">🚨 Runbooks & Deploy</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">Contract changes: DTO → build → <code>Social.API.json</code> → <code>pnpm run generate:all</code> → tests → update <code>docs/API_REFERENCE.md</code>. Schema changes go through EF migrations with human review.</p>
+                            <div style="margin-top:0.85rem; padding:0.75rem 1rem; border-radius:8px; background:rgba(225, 29, 72, 0.1); border:1px solid rgba(225, 29, 72, 0.35); font-size:0.82rem; line-height:1.55;">
+                                <span class="status-badge badge-danger">DEPLOY WARNING</span>
+                                <span style="margin-left:0.5rem;">3 pending EF migrations require explicit human approval. Never run <code>database update</code>, destructive deletes, or deploys from this dashboard.</span>
+                            </div>
+                            <p class="panel-sub" style="margin-top:0.6rem; margin-bottom:0;">Deep dive: <code>docs/TOOLING_AND_PIPELINE.md</code></p>
+                        </article>
+                    </div>
+                    <div id="docs-empty" class="panel-card" style="display:none; text-align:center; color:var(--text-muted); font-size:0.85rem;">No matching articles. Clear the filter to see all sections.</div>
                 </div>
             </main>
             <footer class="admin-footer">
@@ -1137,6 +1331,51 @@ namespace Social.API.Controllers.Admin
             <div id="modal-inspect-body" style="font-size:0.85rem; display:flex; flex-direction:column; gap:0.85rem;"></div>
             <div style="display:flex; justify-content:flex-end; margin-top:1rem;">
                 <button class="btn btn-secondary" onclick="closeModal('modal-inspect')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Inspect Modal -->
+    <div id="modal-report-inspect" class="modal-backdrop">
+        <div class="modal-dialog" style="max-width:640px;">
+            <div class="modal-header">
+                <h3>Inspect Post Report</h3>
+                <button class="modal-close" onclick="closeModal('modal-report-inspect')">&times;</button>
+            </div>
+            <div id="modal-report-inspect-body" style="font-size:0.85rem; display:flex; flex-direction:column; gap:0.85rem;"></div>
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+                <button class="btn btn-secondary" onclick="closeModal('modal-report-inspect')">Close</button>
+                <button class="btn btn-primary" id="btn-report-inspect-resolve" onclick="openResolveModal(pendingReportId)">Resolve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Resolve Modal -->
+    <div id="modal-report-resolve" class="modal-backdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Resolve Post Report</h3>
+                <button class="modal-close" onclick="closeModal('modal-report-resolve')">&times;</button>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;" id="report-resolve-summary">
+                    Choose a resolution. Dismiss closes the report; Hide post removes it from the feed and notifies the author.
+                </p>
+                <div style="margin-bottom:0.75rem;">
+                    <label style="display:block; font-size:0.8rem; margin-bottom:0.35rem; color:var(--text-secondary);">Resolution Action</label>
+                    <select id="report-resolve-action" class="form-select" style="width:100%;">
+                        <option value="dismiss">Dismiss — no violation</option>
+                        <option value="hide_post">Hide post & notify author</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.8rem; margin-bottom:0.35rem; color:var(--text-secondary);">Admin Note (optional)</label>
+                    <textarea id="report-resolve-note" class="form-control" style="width:100%; min-height:80px;" placeholder="Resolution rationale for the audit trail..."></textarea>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                <button class="btn btn-secondary" onclick="closeModal('modal-report-resolve')">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmResolveReport()">Confirm Resolve</button>
             </div>
         </div>
     </div>
@@ -1338,14 +1577,16 @@ namespace Social.API.Controllers.Admin
             const path = window.location.pathname.toLowerCase();
             if (path.endsWith('/users')) showTab('users', false);
             else if (path.endsWith('/moderation')) showTab('moderation', false);
+            else if (path.endsWith('/reports')) showTab('reports', false);
             else if (path.endsWith('/audit-logs') || path.endsWith('/audit')) showTab('audit', false);
             else if (path.endsWith('/diagnostics') || path.endsWith('/system')) showTab('diagnostics', false);
+            else if (path.endsWith('/docs')) showTab('docs', false);
             else if (path.endsWith('/dashboard')) showTab('overview', false);
             else showTab('overview', false);
         });
 
         function showTab(tabName, updateUrl = true) {
-            const tabs = ['overview', 'users', 'moderation', 'audit', 'diagnostics'];
+            const tabs = ['overview', 'users', 'moderation', 'reports', 'audit', 'diagnostics', 'docs'];
             tabs.forEach(t => {
                 const el = document.getElementById('tab-' + t);
                 if (el) el.style.display = (t === tabName) ? 'block' : 'none';
@@ -1357,8 +1598,10 @@ namespace Social.API.Controllers.Admin
                 overview: 'Platform Overview & Real-Time Analytics',
                 users: 'User & Identity Directory',
                 moderation: 'Centralized Content Moderation',
+                reports: 'Trust & Safety · Post Reports',
                 audit: 'Administrative Audit Trail',
-                diagnostics: 'System Observability & API Health'
+                diagnostics: 'System Observability & API Health',
+                docs: 'Documentation · Admin Guide'
             };
             document.getElementById('page-title-heading').innerText = titles[tabName] || 'Admin Console';
             document.title = (titles[tabName] || 'Admin Console') + ' - Social Admin Console';
@@ -1368,8 +1611,10 @@ namespace Social.API.Controllers.Admin
                     overview: '/admin/dashboard',
                     users: '/admin/users',
                     moderation: '/admin/moderation',
+                    reports: '/admin/reports',
                     audit: '/admin/audit-logs',
-                    diagnostics: '/admin/system'
+                    diagnostics: '/admin/system',
+                    docs: '/admin/docs'
                 };
                 window.history.pushState({ tab: tabName }, '', urls[tabName] || '/admin');
             }
@@ -1377,6 +1622,7 @@ namespace Social.API.Controllers.Admin
             if (tabName === 'overview') { loadOverview(); loadExecutive(); }
             if (tabName === 'users') { loadUsers(); loadUserIntelligence(); }
             if (tabName === 'moderation') loadModerationFeed();
+            if (tabName === 'reports') loadReports();
             if (tabName === 'audit') loadAuditLogs();
             if (tabName === 'diagnostics') { loadDiagnostics(); loadSystemObservability(); startSysAuditPoll(); }
         }
@@ -1393,12 +1639,12 @@ namespace Social.API.Controllers.Admin
         }
         function toggleAdminTheme() {
             const root = document.documentElement;
-            const next = root.getAttribute('data-theme') === 'light' ? '' : 'light';
+            const next = root.getAttribute('data-theme') === 'dark' ? '' : 'dark';
             if (next) root.setAttribute('data-theme', next); else root.removeAttribute('data-theme');
             try { localStorage.setItem('admin-theme', next); } catch (e) {}
         }
         (function initAdminTheme() {
-            try { if (localStorage.getItem('admin-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}
+            try { if (localStorage.getItem('admin-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}
         })();
         const cmdkRoutes = [
             ['Overview', 'Executive dashboard', 'overview', '/admin/dashboard'],
@@ -1407,9 +1653,11 @@ namespace Social.API.Controllers.Admin
             ['Growth & Cohorts', 'Signup velocity', 'users', '/admin/users'],
             ['Platform Velocity', 'Content trends', 'overview', '/admin/dashboard'],
             ['Moderation & Safety', 'Review queue', 'moderation', '/admin/moderation'],
+            ['Reported Posts', 'Report triage queue', 'reports', '/admin/reports'],
             ['API Observability', 'Latency + endpoints', 'diagnostics', '/admin/system'],
             ['Audit Trail', 'Admin actions', 'audit', '/admin/audit-logs'],
-            ['System Health', 'Process + cache', 'diagnostics', '/admin/system']
+            ['System Health', 'Process + cache', 'diagnostics', '/admin/system'],
+            ['Documentation', 'Admin guide & runbooks', 'docs', '/admin/docs']
         ];
         function openCommandPalette() {
             document.getElementById('cmdk-backdrop').classList.add('open');
@@ -1429,6 +1677,23 @@ namespace Social.API.Controllers.Admin
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCommandPalette(); }
             if (e.key === 'Escape') closeCommandPalette();
         });
+        function filterDocs() {
+            const input = document.getElementById('docs-search');
+            const q = (input && input.value ? input.value : '').toLowerCase();
+            let visible = 0;
+            document.querySelectorAll('#tab-docs .docs-article').forEach(a => {
+                const hay = ((a.getAttribute('data-title') || '') + ' ' + (a.innerText || '')).toLowerCase();
+                const match = hay.indexOf(q) !== -1;
+                a.style.display = match ? '' : 'none';
+                if (match) {
+                    visible = visible + 1;
+                }
+            });
+            const empty = document.getElementById('docs-empty');
+            if (empty) {
+                empty.style.display = visible === 0 ? 'block' : 'none';
+            }
+        }
         async function pollHeartbeat() {
             try {
                 const res = await fetch('/api/admin/analytics/diagnostics');
@@ -1479,7 +1744,7 @@ namespace Social.API.Controllers.Admin
             if (execCharts[id]) execCharts[id].destroy();
             execCharts[id] = make(el);
         }
-        const gridColor = 'rgba(255,255,255,0.06)';
+        const gridColor = 'rgba(0,0,0,0.06)';
 
         /* ---------- Page 1: Executive Overview ---------- */
         async function loadExecutive() {
@@ -1505,25 +1770,25 @@ namespace Social.API.Controllers.Admin
                 ]);
                 document.getElementById('exec-trend-range').innerText = 'Last ' + growth.days + ' days';
                 const labels = growth.points.map(p => new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
-                document.getElementById('spark-dau').innerHTML = sparklineSVG(growth.points.map(p => p.dau), '#4f46e5');
-                document.getElementById('spark-new').innerHTML = sparklineSVG(growth.points.map(p => p.newUsers), '#0d9488');
+                document.getElementById('spark-dau').innerHTML = sparklineSVG(growth.points.map(p => p.dau), '#0866FF');
+                document.getElementById('spark-new').innerHTML = sparklineSVG(growth.points.map(p => p.newUsers), '#31A24C');
                 const byDay = {};
                 (velocity.points || []).forEach(p => { byDay[new Date(p.date).toDateString()] = (p.posts || 0) + (p.shares || 0); });
                 const content = growth.points.map(p => byDay[new Date(p.date).toDateString()] || 0);
-                document.getElementById('spark-interact').innerHTML = sparklineSVG(content, '#f59e0b');
+                document.getElementById('spark-interact').innerHTML = sparklineSVG(content, '#F7B928');
                 chartOrFallback('exec-trend', el => new Chart(el, {
                     type: 'line',
                     data: { labels, datasets: [
-                        { label: 'DAU', data: growth.points.map(p => p.dau), borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.18)', fill: true, tension: 0.4, pointRadius: 0 },
-                        { label: 'Content', data: content, borderColor: '#0d9488', backgroundColor: 'rgba(13,148,136,0.15)', fill: true, tension: 0.4, pointRadius: 0 }
+                        { label: 'DAU', data: growth.points.map(p => p.dau), borderColor: '#0866FF', backgroundColor: 'rgba(8,102,255,0.15)', fill: true, tension: 0.4, pointRadius: 0 },
+                        { label: 'Content', data: content, borderColor: '#31A24C', backgroundColor: 'rgba(49,162,76,0.15)', fill: true, tension: 0.4, pointRadius: 0 }
                     ]},
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a1a1aa', boxWidth: 12 } } }, scales: { x: { ticks: { color: '#63636b', maxTicksLimit: 8 }, grid: { color: gridColor } }, y: { ticks: { color: '#63636b' }, grid: { color: gridColor }, beginAtZero: true } } }
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#65676B', boxWidth: 12 } } }, scales: { x: { ticks: { color: '#65676B', maxTicksLimit: 8 }, grid: { color: gridColor } }, y: { ticks: { color: '#65676B' }, grid: { color: gridColor }, beginAtZero: true } } }
                 }));
                 const totals = velocity.points.reduce((a, p) => ({ posts: a.posts + (p.posts || 0), shares: a.shares + (p.shares || 0) }), { posts: 0, shares: 0 });
                 chartOrFallback('exec-donut', el => new Chart(el, {
                     type: 'doughnut',
-                    data: { labels: ['Original posts', 'Shares', 'Media attachments'], datasets: [{ data: [Math.max(0, totals.posts - totals.shares), totals.shares, velocity.mediaAttachments || 0], backgroundColor: ['#4f46e5', '#0d9488', '#f59e0b'], borderWidth: 0 }] },
-                    options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: '#a1a1aa', boxWidth: 12 } } } }
+                    data: { labels: ['Original posts', 'Shares', 'Media attachments'], datasets: [{ data: [Math.max(0, totals.posts - totals.shares), totals.shares, velocity.mediaAttachments || 0], backgroundColor: ['#0866FF', '#31A24C', '#F7B928'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: '#65676B', boxWidth: 12 } } } }
                 }));
             } catch (e) { console.error(e); }
             try {
@@ -2364,6 +2629,220 @@ namespace Social.API.Controllers.Admin
         }
 
         /* -------------------------------------------------------------
+           POST REPORTS TRIAGE QUEUE
+        ------------------------------------------------------------- */
+        let reportsPage = 1;
+        let reportsStatus = '';
+        let reportsQuery = '';
+        const reportsPageSize = 20;
+        let reportsCache = [];
+        let pendingReportId = null;
+
+        function reportStatusBadge(status) {
+            const s = String(status || 'Pending');
+            const cls = s === 'Pending' ? 'badge-warning'
+                : (s === 'Actioned' ? 'badge-success'
+                : (s === 'Dismissed' ? 'badge-info' : 'badge-info'));
+            return `<span class="status-badge ${cls}"><span class="report-status-dot report-status-${escapeHtml(s.toLowerCase())}"></span>${escapeHtml(s)}</span>`;
+        }
+
+        function selectReportStatus(status) {
+            reportsStatus = status || '';
+            reportsPage = 1;
+            ['all', 'pending', 'dismissed', 'actioned'].forEach(k => {
+                const el = document.getElementById('report-pill-' + k);
+                if (el) el.classList.toggle('active', (k === 'all' && !reportsStatus) || k === reportsStatus.toLowerCase());
+            });
+            loadReports();
+        }
+
+        function searchReports() {
+            reportsPage = 1;
+            reportsQuery = (document.getElementById('reports-search-input').value || '').trim().toLowerCase();
+            renderReports(reportsCache);
+        }
+
+        function changeReportsPage(delta) {
+            reportsPage += delta;
+            if (reportsPage < 1) reportsPage = 1;
+            loadReports();
+        }
+
+        async function loadReports() {
+            const tbody = document.getElementById('reports-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Loading report queue...</td></tr>';
+            try {
+                let url = `/api/admin/moderation/reports?page=${reportsPage}&pageSize=${reportsPageSize}`;
+                if (reportsStatus) url += `&status=${encodeURIComponent(reportsStatus)}`;
+                const res = await fetch(url, { credentials: 'same-origin' });
+                if (!res.ok) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--accent-rose);">Error loading report queue.</td></tr>';
+                    return;
+                }
+                const json = await res.json();
+                const data = json.data || json;
+                const items = data.items || [];
+                const total = data.total ?? data.totalCount ?? items.length;
+                reportsCache = items;
+
+                document.getElementById('reports-count-summary').innerText = `${total} report${total === 1 ? '' : 's'} total`;
+                document.getElementById('reports-page-info').innerText = `Page ${reportsPage} of ${Math.max(1, Math.ceil(total / reportsPageSize))} (${total} reports)`;
+                document.getElementById('btn-reports-prev').disabled = reportsPage <= 1;
+                document.getElementById('btn-reports-next').disabled = reportsPage * reportsPageSize >= total;
+
+                renderReports(items);
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--accent-rose);">Error loading report queue.</td></tr>';
+            }
+        }
+
+        function renderReports(items) {
+            const tbody = document.getElementById('reports-table-body');
+            const q = reportsQuery;
+            const filtered = (items || []).filter(r => {
+                if (!q) return true;
+                return String(r.postId || '').toLowerCase().includes(q)
+                    || String(r.reporterUserId || '').toLowerCase().includes(q)
+                    || String(r.reason || '').toLowerCase().includes(q);
+            });
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No reports found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(r => {
+                const dt = formatStandardDate(r.createdAt);
+                const shortId = escapeHtml(String(r.id || '').slice(0, 8));
+                const isOpen = String(r.status || 'Pending') === 'Pending';
+                return `
+                    <tr>
+                        <td><code title="${escapeHtml(r.id || '')}">${shortId}…</code></td>
+                        <td style="max-width:280px;">
+                            <div style="font-family:monospace; font-size:0.75rem; color:var(--text-muted);">${escapeHtml(r.postId || '')}</div>
+                            <div class="report-excerpt" dir="auto" title="${escapeHtml(r.postExcerpt || '')}">${escapeHtml(r.postExcerpt || '(no excerpt)')}</div>
+                        </td>
+                        <td style="font-family:monospace; font-size:0.75rem;">${escapeHtml(r.reporterUserId || '')}</td>
+                        <td><span class="status-badge badge-purple">${escapeHtml(r.reason || '')}</span></td>
+                        <td>${reportStatusBadge(r.status)}</td>
+                        <td style="font-size:0.8rem;" title="${dt.tooltip}">
+                            <div>${dt.display}</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted);">${dt.relative}</div>
+                        </td>
+                        <td class="tnum" style="text-align:center;">${r.openCountForPost ?? 0}</td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <button class="btn-table-action" title="Inspect report" onclick="inspectReport('${escapeHtml(r.id || '')}')">🔍 Inspect</button>
+                            ${isOpen ? `<button class="btn-table-action" title="Resolve report" onclick="openResolveModal('${escapeHtml(r.id || '')}')">Resolve</button>
+                            <button class="btn-table-action" style="color:var(--accent-rose);" title="Dismiss report" onclick="quickDismissReport('${escapeHtml(r.id || '')}')">Dismiss</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function inspectReport(id) {
+            if (!id) return;
+            pendingReportId = id;
+            const bodyEl = document.getElementById('modal-report-inspect-body');
+            bodyEl.innerHTML = '<div style="text-align:center; color:var(--text-muted);">Loading report…</div>';
+            document.getElementById('modal-report-inspect').style.display = 'flex';
+            try {
+                const res = await fetch(`/api/admin/moderation/reports/${encodeURIComponent(id)}`, { credentials: 'same-origin' });
+                if (!res.ok) {
+                    bodyEl.innerHTML = '<div style="text-align:center; color:var(--accent-rose);">Failed to load report.</div>';
+                    return;
+                }
+                const json = await res.json();
+                const r = json.data || json;
+                const dt = formatStandardDate(r.createdAt);
+                const reviewed = r.reviewedAt ? formatStandardDate(r.reviewedAt) : null;
+                bodyEl.innerHTML = `
+                    <div><strong>Report ID:</strong> <code>${escapeHtml(r.id || '')}</code></div>
+                    <div><strong>Post ID:</strong> <code>${escapeHtml(r.postId || '')}</code></div>
+                    <div><strong>Post Author:</strong> <code>${escapeHtml(r.postAuthorId || '')}</code></div>
+                    <div><strong>Reporter:</strong> <code>${escapeHtml(r.reporterUserId || '')}</code></div>
+                    <div><strong>Reason:</strong> <span class="status-badge badge-purple">${escapeHtml(r.reason || '')}</span></div>
+                    <div><strong>Status:</strong> ${reportStatusBadge(r.status)}</div>
+                    <div><strong>Open reports for post:</strong> <span class="tnum">${r.openCountForPost ?? 0}</span></div>
+                    <div><strong>Reported (UTC):</strong> <code>${dt.exactUtc}</code> <span class="mod-time-pill">${dt.relative}</span></div>
+                    ${reviewed ? `<div><strong>Reviewed (UTC):</strong> <code>${reviewed.exactUtc}</code></div>` : ''}
+                    ${r.details ? `<div><strong>Details:</strong></div><div style="background:var(--bg-card); padding:0.75rem; border-radius:6px; white-space:pre-wrap;" dir="auto">${escapeHtml(r.details)}</div>` : ''}
+                    <div><strong>Post Excerpt:</strong></div>
+                    <div style="background:var(--bg-card); padding:0.75rem; border-radius:6px; white-space:pre-wrap;" dir="auto">${escapeHtml(r.postExcerpt) || '(no excerpt)'}</div>
+                    ${r.adminNote ? `<div><strong>Admin Note:</strong></div><div style="background:var(--bg-card); padding:0.75rem; border-radius:6px; white-space:pre-wrap;" dir="auto">${escapeHtml(r.adminNote)}</div>` : ''}
+                `;
+                const resolveBtn = document.getElementById('btn-report-inspect-resolve');
+                if (resolveBtn) resolveBtn.style.display = String(r.status || 'Pending') === 'Pending' ? '' : 'none';
+            } catch (err) {
+                console.error(err);
+                bodyEl.innerHTML = '<div style="text-align:center; color:var(--accent-rose);">Network error loading report.</div>';
+            }
+        }
+
+        function openResolveModal(id, presetAction) {
+            if (!id) return;
+            pendingReportId = id;
+            closeModal('modal-report-inspect');
+            const cached = (reportsCache || []).find(r => String(r.id) === String(id));
+            const summary = cached
+                ? `Report ${String(id).slice(0, 8)}… · post ${cached.postId} · reason ${cached.reason}.`
+                : `Resolving report ${String(id).slice(0, 8)}….`;
+            document.getElementById('report-resolve-summary').innerText = summary + ' Dismiss closes the report; Hide post removes it from the feed and notifies the author.';
+            document.getElementById('report-resolve-action').value = presetAction === 'hide_post' ? 'hide_post' : 'dismiss';
+            document.getElementById('report-resolve-note').value = '';
+            document.getElementById('modal-report-resolve').style.display = 'flex';
+        }
+
+        async function resolveReport(id) {
+            openResolveModal(id);
+        }
+
+        async function confirmResolveReport() {
+            if (!pendingReportId) return;
+            const action = document.getElementById('report-resolve-action').value;
+            const note = document.getElementById('report-resolve-note').value.trim();
+            try {
+                const res = await fetch(`/api/admin/moderation/reports/${encodeURIComponent(pendingReportId)}/resolve`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, note: note || null })
+                });
+                closeModal('modal-report-resolve');
+                if (res.ok) {
+                    showToast(`Report ${action === 'hide_post' ? 'actioned — post hidden' : 'dismissed'}.`, 'success');
+                    loadReports();
+                } else {
+                    showToast('Failed to resolve report.', 'danger');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Network error resolving report.', 'danger');
+            }
+        }
+
+        async function quickDismissReport(id) {
+            if (!id || !confirm('Dismiss this report with no further action?')) return;
+            try {
+                const res = await fetch(`/api/admin/moderation/reports/${encodeURIComponent(id)}/resolve`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'dismiss' })
+                });
+                if (res.ok) {
+                    showToast('Report dismissed.', 'success');
+                    loadReports();
+                } else {
+                    showToast('Failed to dismiss report.', 'danger');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Network error dismissing report.', 'danger');
+            }
+        }
+
+        /* -------------------------------------------------------------
            AUDIT LOGS & DIAGNOSTICS
         ------------------------------------------------------------- */
         async function loadAuditLogs() {
@@ -2433,7 +2912,7 @@ namespace Social.API.Controllers.Admin
                     <td class="tnum">${e.requests.toLocaleString()}</td>
                     <td class="tnum">${e.avgMs.toFixed(1)} ms</td>
                     <td><span class="status-badge ${e.errorPct > 5 ? 'badge-danger' : e.errorPct > 0 ? 'badge-warning' : 'badge-success'}">${e.errorPct.toFixed(1)}%</span></td>
-                    <td>${sparklineSVG([e.avgMs * (1 - e.errorPct / 200), e.avgMs, e.avgMs * (1 + e.errorPct / 200)], e.errorPct > 5 ? '#e11d48' : '#4f46e5')}</td>
+                    <td>${sparklineSVG([e.avgMs * (1 - e.errorPct / 200), e.avgMs, e.avgMs * (1 + e.errorPct / 200)], e.errorPct > 5 ? '#F02849' : '#0866FF')}</td>
                 </tr>`).join('');
         }
         async function loadSystemObservability() {
@@ -2494,9 +2973,9 @@ namespace Social.API.Controllers.Admin
                     type: 'bar',
                     data: { labels, datasets: [
                         { label: 'New signups', data: growth.points.map(p => p.newUsers), backgroundColor: 'rgba(79,70,229,0.75)', borderRadius: 3 },
-                        { label: 'DAU', data: growth.points.map(p => p.dau), type: 'line', borderColor: '#0d9488', tension: 0.4, pointRadius: 0 }
+                        { label: 'DAU', data: growth.points.map(p => p.dau), type: 'line', borderColor: '#31A24C', tension: 0.4, pointRadius: 0 }
                     ]},
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a1a1aa', boxWidth: 12 } } }, scales: { x: { ticks: { color: '#63636b', maxTicksLimit: 8 }, grid: { color: gridColor } }, y: { ticks: { color: '#63636b' }, grid: { color: gridColor }, beginAtZero: true } } }
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#65676B', boxWidth: 12 } } }, scales: { x: { ticks: { color: '#65676B', maxTicksLimit: 8 }, grid: { color: gridColor } }, y: { ticks: { color: '#65676B' }, grid: { color: gridColor }, beginAtZero: true } } }
                 }));
             } catch (e) { console.error(e); }
             try {
@@ -2545,8 +3024,10 @@ namespace Social.API.Controllers.Admin
         pollHeartbeat();
         if (initialTab === 'users') { loadUsers(); loadUserIntelligence(); }
         else if (initialTab === 'moderation') loadModerationFeed();
+        else if (initialTab === 'reports') loadReports();
         else if (initialTab === 'audit') loadAuditLogs();
         else if (initialTab === 'diagnostics') { loadDiagnostics(); loadSystemObservability(); startSysAuditPoll(); }
+        else if (initialTab === 'docs') { /* docs tab is static content — no data fetch, heartbeat already polling */ }
         else { loadOverview(); loadExecutive(); }
     </script>
 </body>
