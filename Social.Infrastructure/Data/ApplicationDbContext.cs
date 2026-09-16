@@ -21,6 +21,7 @@ namespace Social.Infrastructure.Data
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<RequestLog> RequestLogs { get; set; }
         public DbSet<DailyMetricSnapshot> DailyMetricSnapshots { get; set; }
+        public DbSet<PostReport> PostReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -263,6 +264,54 @@ namespace Social.Infrastructure.Data
                 entity.HasOne(b => b.BlockedUser)
                     .WithMany()
                     .HasForeignKey(b => b.BlockedUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // =========================================================
+            // 6b. POST REPORT (user safety reports on posts)
+            // NOTE: No global HasQueryFilter here by design. Admin/moderation
+            // triage must list reports in every status; repositories filter
+            // explicitly per query. Restrict deletes so hiding/deleting a post
+            // or user never cascade-deletes the report audit trail.
+            // =========================================================
+            modelBuilder.Entity<PostReport>(entity =>
+            {
+                entity.Property(r => r.PostId).HasMaxLength(255);
+                entity.Property(r => r.ReporterUserId).HasMaxLength(255);
+                entity.Property(r => r.Reason).HasMaxLength(32);
+                entity.Property(r => r.Status).HasMaxLength(16);
+                entity.Property(r => r.Details).HasMaxLength(1000);
+                entity.Property(r => r.AdminNote).HasMaxLength(500);
+                entity.Property(r => r.ReviewedByAdminId).HasMaxLength(255);
+
+                // Preserve single-column FK indexes (MySQL 1553).
+                entity.HasIndex(r => r.PostId);
+                entity.HasIndex(r => r.ReporterUserId);
+
+                // Duplicate-open guard + reporter lookups.
+                entity.HasIndex(r => new
+                {
+                    r.PostId,
+                    r.ReporterUserId,
+                    r.Status
+                });
+
+                // Moderation queue scans (filter + deterministic order).
+                entity.HasIndex(r => new
+                {
+                    r.Status,
+                    r.CreatedAt
+                })
+                .IsDescending(false, true);
+
+                entity.HasOne(r => r.Post)
+                    .WithMany()
+                    .HasForeignKey(r => r.PostId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.Reporter)
+                    .WithMany()
+                    .HasForeignKey(r => r.ReporterUserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 

@@ -5,6 +5,9 @@ using Social.Application.Features.Admin.Common;
 using Social.Application.Features.Admin.Moderation.Commands;
 using Social.Application.Features.Admin.Moderation.DTOs;
 using Social.Application.Features.Admin.Moderation.Queries;
+using Social.Application.Features.Reports.DTOs;
+using Social.Application.Features.Reports.Commands;
+using Social.Application.Features.Reports.Queries;
 using System.Threading.Tasks;
 
 namespace Social.API.Controllers.Admin
@@ -81,6 +84,29 @@ namespace Social.API.Controllers.Admin
             var adminEmail = GetUserEmail();
             var result = await _sender.Send(new DeletePostPermanentlyCommand(adminId, adminEmail, postId, reason ?? "Permanently deleted by administrator"));
             return ApiSuccess("Post permanently deleted successfully", result);
+        }
+
+        [HttpGet("reports")]
+        public async Task<IActionResult> GetReports([FromQuery] string? status = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var result = await _sender.Send(new GetReportsQueueQuery(status, page, pageSize));
+            return ApiSuccess("Reports queue retrieved successfully", result);
+        }
+
+        [HttpGet("reports/{reportId}")]
+        public async Task<IActionResult> GetReportById(string reportId)
+        {
+            var result = await _sender.Send(new GetReportByIdQuery(reportId));
+            return ApiSuccess("Report retrieved successfully", result);
+        }
+
+        [HttpPost("reports/{reportId}/resolve")]
+        public async Task<IActionResult> ResolveReport(string reportId, [FromBody] ResolveReportRequest request)
+        {
+            var adminId = GetUserId();
+            var adminEmail = GetUserEmail();
+            var result = await _sender.Send(new ResolveReportCommand(reportId, adminId, adminEmail, request?.Action ?? string.Empty, request?.Note));
+            return ApiSuccess("Report resolved successfully", result);
         }
     }
 }

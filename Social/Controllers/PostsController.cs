@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Social.Application.Features.Posts.Commands;
 using Social.Application.Features.Posts.Queries;
 using Social.Application.Features.Posts.DTOs;
+using Social.Application.Features.Reports.Commands;
+using Social.Application.Features.Reports.DTOs;
+using Social.Application.Features.Reports.Queries;
 using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -185,6 +188,101 @@ namespace Social.API.Controllers
                 }
                 
                 return result ? ApiSuccess<object>("Post deleted successfully", null) : ApiNotFound<object>("Post not found or access denied.");
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>($"An error occurred: {ex.Message}");
+            }
+        }
+
+        // Literal segment wins over "{postId}" in route precedence, so this
+        // never clashes with GetPostById. Page/Limit stay capitalized to match
+        // every other posts route (compass §3).
+        [HttpGet("reports/mine")]
+        public async Task<IActionResult> GetMyReports([FromQuery] int Page = 1, [FromQuery] int Limit = 20)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrWhiteSpace(userId))
+                    return ApiUnauthorized<object>("User ID is required.");
+                var result = await _mediator.Send(new GetMyReportsQuery(userId, Page, Limit));
+                return ApiSuccess("Reports retrieved successfully", result);
+            }
+            catch (ArgumentException ex)
+            {
+                return ApiError<object>(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>($"An error occurred: {ex.Message}");
+            }
+        }
+
+        [HttpPost("{postId}/report")]
+        public async Task<IActionResult> ReportPost(string postId, [FromBody] ReportPostRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(postId))
+                return ApiError<object>("Post ID is required.");
+            if (request == null || string.IsNullOrWhiteSpace(request.Reason))
+                return ApiError<object>("Reason is required.");
+
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrWhiteSpace(userId))
+                    return ApiUnauthorized<object>("User ID is required.");
+                var result = await _mediator.Send(new ReportPostCommand(postId, userId, request.Reason, request.Details));
+                return ApiSuccess("Post reported successfully", result);
+            }
+            catch (FluentValidation.ValidationException ex)
+            {
+                var errors = ex.Errors.Select(e => new { Field = e.PropertyName, Error = e.ErrorMessage }).ToList();
+                return ApiError<object>("Validation failed.", errors);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return ApiNotFound<object>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiError<object>(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return ApiError<object>(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return ApiServerError<object>($"An error occurred: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("reports/{reportId}")]
+        public async Task<IActionResult> CancelReport(string reportId)
+        {
+            if (string.IsNullOrWhiteSpace(reportId))
+                return ApiError<object>("Report ID is required.");
+
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrWhiteSpace(userId))
+                    return ApiUnauthorized<object>("User ID is required.");
+                var result = await _mediator.Send(new CancelReportCommand(reportId, userId));
+                return result ? ApiSuccess<object>("Report cancelled successfully", null) : ApiNotFound<object>("Report not found.");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return ApiNotFound<object>(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return ApiUnauthorized<object>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiError<object>(ex.Message);
             }
             catch (Exception ex)
             {

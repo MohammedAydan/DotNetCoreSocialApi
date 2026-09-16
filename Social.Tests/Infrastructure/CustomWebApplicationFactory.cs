@@ -21,6 +21,7 @@ namespace Social.Tests.Infrastructure
         public ICacheService MockCacheService { get; } = Substitute.For<ICacheService>();
         public IAdminRepository AdminRepositoryInstance { get; } = new TestAdminRepository();
         public IAuditLogRepository AuditLogRepositoryInstance { get; } = new TestAuditLogRepository();
+        public IPostReportRepository PostReportRepositoryInstance { get; } = new TestPostReportRepository();
 
         static CustomWebApplicationFactory()
         {
@@ -78,6 +79,7 @@ namespace Social.Tests.Infrastructure
                 ReplaceSingleton(services, MockCacheService);
                 ReplaceScoped(services, AdminRepositoryInstance);
                 ReplaceScoped(services, AuditLogRepositoryInstance);
+                ReplaceScoped<IPostReportRepository>(services, PostReportRepositoryInstance);
 
                 // Configure test authentication
                 services.AddAuthentication(options =>

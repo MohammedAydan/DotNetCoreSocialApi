@@ -85,6 +85,7 @@ namespace Social.Infrastructure
             builder.Services.AddScoped<IBlockUserRepository, BlockUserRepository>();
             builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+            builder.Services.AddScoped<IPostReportRepository, PostReportRepository>();
             builder.Services.AddScoped<ISystemMetricsService, Social.Infrastructure.Diagnostics.SystemMetricsService>();
             builder.Services.AddScoped<IDatabaseSeeder, Social.Infrastructure.Services.DatabaseSeeder>();
 
