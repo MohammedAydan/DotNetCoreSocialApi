@@ -71,7 +71,7 @@ pnpm run typecheck       # tsc --noEmit over orval.config + custom-instance + ..
 
 `tsconfig.json` includes `["orval.config.ts", "custom-instance.ts", "../web"]` with a typecheck-only `paths` map for the two bare imports Orval emits (`zod`, `@tanstack/react-query` → `./node_modules/...`): generated sources live in `../web` but dependencies are installed in the generator package (ADR-013; consumers resolve via their own deps, no workspace/junction hacks).
 
-Verification gates: `pnpm run typecheck` → 0 errors; `flutter analyze` **inside** `sdks/mobile/social_api_client` → 0 errors (11 upstream `unused_import` warnings accepted as generator-template noise); `dotnet build` → 0 errors; `dotnet test` → 242/242.
+Verification gates: `pnpm run typecheck` → 0 errors; `flutter analyze` **inside** `sdks/mobile/social_api_client` → 0 errors (11 upstream `unused_import` warnings accepted as generator-template noise); `dotnet build` → 0 errors; `dotnet test` → 266/266.
 
 ## 5. What `generate:mobile` actually does
 

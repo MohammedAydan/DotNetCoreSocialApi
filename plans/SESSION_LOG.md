@@ -885,4 +885,104 @@ Pipeline home is `sdks/generator` (`pnpm install`, `pnpm run generate:all`, `pnp
 - Blockers: None
 ---
 
+## Session: 2026-09-17 (post-reporting) — relocated to chronological end (was inserted mid-file; fixed 2026-09-17)
+### What was done
+- Implemented full post-reporting system via 3 parallel subagents (Worker-A persistence / Worker-B CQRS+API / Worker-C dashboard+docs) with exclusive file ownership per `plans/post-reporting/{plan,tasks,context}.md`.
+- Core+Infra: `PostReport` entity, `ReportReasons`/`ReportStatuses`, 8-method `IPostReportRepository` (+ additive `DeleteAsync`), `PostReportRepository`, DbContext §6b config, additive migration `20260916225834_AddPostReports` (NOT applied).
+- Application+API: `ReportPost`/`CancelReport`/`GetMyReports`/`GetReportsQueue`/`GetReportById`/`ResolveReport` CQRS + validators; user routes `POST /api/posts/{postId}/report`, `GET /api/posts/reports/mine` (Page/Limit), `DELETE /api/posts/reports/{reportId}`; admin routes `GET/GET{id}/POST{id}/resolve` on `AdminModerationController` (Admin,Moderator; audit + resilient notices; hide_post delegates to real HidePostAsync).
+- Dashboard: `GET /admin/reports` ("Trust & Safety · Post Reports"), 🚩 sidebar entry, queue table + inspect/resolve modals + toasts; appended CSS only.
+- Main integration fixes: `PostReportDto.OpenCountForPost` + per-distinct-post counts; dashboard `totalCount` fallback; `Include(Post)` on mine query.
+- Docs: `API_REFERENCE.md` 83 ops / 76 paths (§2: 11, §11: 10); `AGENTS.md` + `README.md` pointers updated; ADR-014 written.
+- Verified: `dotnet build -c Release` 0 errors; `dotnet test -c Release` 266/266 (242 baseline + 24 new); fresh `Social.API.json` = 76 paths / 83 ops / 11 tags with 6 report paths.
+
+### Files changed
+- New: `Social.Core/Entities/PostReport.cs`, `Social.Core/Reporting/*`, `Social.Core/Interfaces/IPostReportRepository.cs`, `Social.Infrastructure/Repositories/PostReportRepository.cs`, `Social.Infrastructure/Migrations/20260916225834_AddPostReports*`, `Social.Application/Features/Reports/**`, `Social.Tests/Integration/Reports/*`, `Social.Tests/Infrastructure/TestPostReportRepository.cs`, `Social.Tests/Integration/Admin/ReportsDashboardRouteTests.cs`, `plans/post-reporting/*`
+- Modified: `ApplicationDbContext.cs`, `DependencyInjection.cs` (infra), `PostsController.cs`, `AdminModerationController.cs`, `AdminDashboardController.cs`, `admin-dashboard.css`, `docs/API_REFERENCE.md`, `AGENTS.md`, `README.md`, `plans/{context,DECISIONS}.md`
+
+### State at end of session
+- Active feature: none (post-reporting completed)
+- Next: human approval → `dotnet ef database update` (3 pending migrations now) → deploy binaries → verify /admin/reports live; optionally `pnpm run generate:all` for SDKs
+- Blockers: None
+---
+
+## Session: 2026-09-17 (sdk-docs-refresh)
+### What was done
+- Regenerated both SDKs from the post-reporting spec (solo, linear; zero production code touched) per `plans/sdk-docs-refresh/*`.
+- `dotnet build -c Release` 0 errors; fresh `Social.API.json` holds all 6 report paths; `pnpm run generate:all` exit 0 (Orval web + dart-dio mobile with new `ReportPostRequest`/`ResolveReportRequest` models).
+- Gates: `pnpm run typecheck` 0 errors; `flutter analyze` 0 errors + 11 accepted upstream warnings; `dotnet test -c Release` 266/266.
+- Probed real symbols from regenerated output (web hooks/zod/models, Dart methods/ctors — recorded in `plans/sdk-docs-refresh/review.md`).
+- Docs: `SDK_WEB.md` (79 .ts files, 54 models, §3.5 reporting recipe), `SDK_MOBILE.md` (30 models/.g.dart, posts 11 methods, §3.5 recipe before §4), `TOOLING_AND_PIPELINE.md` gates → 266/266. `API_REFERENCE.md` parity holds 83/76.
+
+### Decisions made
+- No ADR (pipeline rerun + docs-only, no architecture change).
+
+### Files changed
+- Regenerated: `sdks/web/**`, `sdks/mobile/social_api_client/**` (never hand-edited)
+- Modified: `docs/SDK_WEB.md`, `docs/SDK_MOBILE.md`, `docs/TOOLING_AND_PIPELINE.md`, `plans/sdk-docs-refresh/*`, `plans/context.md`, `plans/SESSION_LOG.md`
+
+### State at end of session
+- Active feature: none (sdk-docs-refresh completed)
+- Next: prod migration approval + binary deploy still pending (3 migrations); deferred: operationIds, Scalar UI, CI wiring
+- Blockers: None
+---
+
+
+
+## Session: 2026-09-17 (admin-dashboard-overhaul)
+### What was done
+- Session boot: read plans/context.md + SESSION_LOG tail (sdk-docs-refresh 266/266 baseline); created exactly 3 plan files (plan/tasks/context) under plans/admin-dashboard-overhaul/.
+- Dispatched 3 parallel subagents with exclusive file ownership: Worker-A CSS design system, Worker-B shell+docs route, Worker-C JS+tests. No two agents touched the same file; workers skipped dotnet gates (main-owned T5).
+- Worker-A: admin-dashboard.css 32KB -> ~61KB elegant token system (dark/light, radius/shadow scales, refined components, NEW docs-* classes, responsive + a11y).
+- Worker-B: AdminDashboardController.cs +~150 lines: GET /admin/docs, DOCUMENTATION sidebar group (nav-docs), profile-menu + CmdK entries, tab-docs with 10 docs articles + inline filterDocs().
+- Worker-C: admin-dashboard.js guarded behavior module (theme/CmdK/filterDocs/range/heartbeat) + NEW AdminDocsRouteTests.cs (4 tests).
+- Main gates: dotnet build -c Release 0 errors; dotnet test -c Release 270/270; grep-verified tab-docs/nav-docs/docs-search + docs-* CSS classes.
+- Closed: review.md written; tasks all [x]; plans/context.md updated (active: none).
+
+### Decisions made
+- No ADR (UI-only, no architecture change). Kept string-HTML shell (Blazor tree stays dead code); inline filterDocs is source of truth; external JS left unwired (follow-up).
+- Docs = curated summaries + repo-path pointers (no route serves docs/*.md by design); 3 pending migrations stay pending.
+
+### Files changed
+- Social.Admin.Web/wwwroot/css/admin-dashboard.css
+- Social/Controllers/Admin/AdminDashboardController.cs
+- Social.Admin.Web/wwwroot/js/admin-dashboard.js
+- Social.Tests/Integration/Admin/AdminDocsRouteTests.cs (new)
+- plans/admin-dashboard-overhaul/*, plans/context.md
+
+### State at end of session
+- Active feature: none (admin-dashboard-overhaul completed)
+- Next: human visual pass at /admin/docs (dark/light, mobile); prod migration approval + binary deploy still pending (out of scope)
+- Blockers: None
+---
+
+## Session: 2026-09-17 (meta-ui-rebuild)
+### What was done
+- Session boot: read plans/context.md + SESSION_LOG tail (admin-dashboard-overhaul 270/270 baseline, active: none). No feature to resume.
+- Phase 1: created exactly 3 plan files under plans/meta-ui-rebuild/ (plan/tasks/context), froze. Solo path per decision tree (no delegation requested).
+- T2: rebuilt admin-dashboard.css on Meta tokens (light-first :root, [data-theme="dark"] FB dark mode, system stack, FB sidebar/nav/buttons/cards/tables/badges/modals/toasts/moderation/docs/login, responsive + a11y kept). All selectors preserved; zero stale light/indigo/Inter refs.
+- T3: rebuilt controller shell � inline Meta tokens (login + dashboard), removed Inter links, S-badge brand mark, FB navbar search pill (->openCommandPalette), collapse-toggle footer, light login page, dark-semantics theme toggle/init, Meta chart literals + grid colors.
+- T4: flipped admin-dashboard.js theme block to THEME_DARK semantics; node --check clean.
+- T5: dotnet build -c Release 0 errors; dotnet test -c Release 270/270 (no test edits); marker greps (71 hits: all nav/tab IDs, login IDs, JS globals, docs markers) + token greps green in controller and CSS.
+- T6: review.md written; tasks all [x]; plans/context.md updated (active: none).
+
+### Decisions made
+- No ADR (UI-only, no architecture change). Light default per Meta language; stale localStorage light values fall back safely. Inter removed for system stack. FB active-pill nav (#E7F3FF + blue) over filled-blue.
+
+### Files changed
+- Social.Admin.Web/wwwroot/css/admin-dashboard.css
+- Social/Controllers/Admin/AdminDashboardController.cs
+- Social.Admin.Web/wwwroot/js/admin-dashboard.js
+- plans/meta-ui-rebuild/*, plans/context.md
+
+### State at end of session
+- Active feature: none (meta-ui-rebuild completed)
+- Next: human visual pass at /admin + /admin/docs (light/dark, mobile); prod migration approval + binary deploy still pending (out of scope)
+- Blockers: None
+---
+
+## Session: 2026-09-17 (commit and push)
+- User authorized committing all pending changes and pushing to origin/master.
+- Verification: 270/270 tests passed; added-content credential-pattern scan found no matches.
+- Known limitation: generated mobile README has trailing whitespace; left unchanged per generated-file policy. UI screenshot verification remains outstanding.
+- No deployment or database migration commands run.
 

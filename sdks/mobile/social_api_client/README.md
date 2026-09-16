@@ -80,6 +80,9 @@ Class | Method | HTTP request | Description
 [*AdminModerationApi*](doc/AdminModerationApi.md) | [**apiAdminModerationPostsPostIdHidePost**](doc/AdminModerationApi.md#apiadminmoderationpostspostidhidepost) | **POST** /api/admin/moderation/posts/{postId}/hide | 
 [*AdminModerationApi*](doc/AdminModerationApi.md) | [**apiAdminModerationPostsPostIdRestorePost**](doc/AdminModerationApi.md#apiadminmoderationpostspostidrestorepost) | **POST** /api/admin/moderation/posts/{postId}/restore | 
 [*AdminModerationApi*](doc/AdminModerationApi.md) | [**apiAdminModerationPostsPostIdVisibilityPost**](doc/AdminModerationApi.md#apiadminmoderationpostspostidvisibilitypost) | **POST** /api/admin/moderation/posts/{postId}/visibility | 
+[*AdminModerationApi*](doc/AdminModerationApi.md) | [**apiAdminModerationReportsGet**](doc/AdminModerationApi.md#apiadminmoderationreportsget) | **GET** /api/admin/moderation/reports | 
+[*AdminModerationApi*](doc/AdminModerationApi.md) | [**apiAdminModerationReportsReportIdGet**](doc/AdminModerationApi.md#apiadminmoderationreportsreportidget) | **GET** /api/admin/moderation/reports/{reportId} | 
+[*AdminModerationApi*](doc/AdminModerationApi.md) | [**apiAdminModerationReportsReportIdResolvePost**](doc/AdminModerationApi.md#apiadminmoderationreportsreportidresolvepost) | **POST** /api/admin/moderation/reports/{reportId}/resolve | 
 [*AdminUsersApi*](doc/AdminUsersApi.md) | [**apiAdminUsersGet**](doc/AdminUsersApi.md#apiadminusersget) | **GET** /api/admin/users | 
 [*AdminUsersApi*](doc/AdminUsersApi.md) | [**apiAdminUsersUserIdBanPost**](doc/AdminUsersApi.md#apiadminusersuseridbanpost) | **POST** /api/admin/users/{userId}/ban | 
 [*AdminUsersApi*](doc/AdminUsersApi.md) | [**apiAdminUsersUserIdResetPasswordPost**](doc/AdminUsersApi.md#apiadminusersuseridresetpasswordpost) | **POST** /api/admin/users/{userId}/reset-password | 
@@ -124,7 +127,10 @@ Class | Method | HTTP request | Description
 [*PostsApi*](doc/PostsApi.md) | [**apiPostsPost**](doc/PostsApi.md#apipostspost) | **POST** /api/Posts | 
 [*PostsApi*](doc/PostsApi.md) | [**apiPostsPostIdDelete**](doc/PostsApi.md#apipostspostiddelete) | **DELETE** /api/Posts/{postId} | 
 [*PostsApi*](doc/PostsApi.md) | [**apiPostsPostIdGet**](doc/PostsApi.md#apipostspostidget) | **GET** /api/Posts/{postId} | 
+[*PostsApi*](doc/PostsApi.md) | [**apiPostsPostIdReportPost**](doc/PostsApi.md#apipostspostidreportpost) | **POST** /api/Posts/{postId}/report | 
 [*PostsApi*](doc/PostsApi.md) | [**apiPostsPut**](doc/PostsApi.md#apipostsput) | **PUT** /api/Posts | 
+[*PostsApi*](doc/PostsApi.md) | [**apiPostsReportsMineGet**](doc/PostsApi.md#apipostsreportsmineget) | **GET** /api/Posts/reports/mine | 
+[*PostsApi*](doc/PostsApi.md) | [**apiPostsReportsReportIdDelete**](doc/PostsApi.md#apipostsreportsreportiddelete) | **DELETE** /api/Posts/reports/{reportId} | 
 [*PostsApi*](doc/PostsApi.md) | [**apiPostsSharePost**](doc/PostsApi.md#apipostssharepost) | **POST** /api/Posts/share | 
 [*PostsApi*](doc/PostsApi.md) | [**apiPostsUserUserIdGet**](doc/PostsApi.md#apipostsuseruseridget) | **GET** /api/Posts/user/{userId} | 
 [*UserApi*](doc/UserApi.md) | [**apiDashboardUserRefreshTokenPost**](doc/UserApi.md#apidashboarduserrefreshtokenpost) | **POST** /api/dashboard/User/refresh-token | 
@@ -166,7 +172,9 @@ Class | Method | HTTP request | Description
  - [MediaDto](doc/MediaDto.md)
  - [NotificationPreferenceDto](doc/NotificationPreferenceDto.md)
  - [RefreshTokenRequest](doc/RefreshTokenRequest.md)
+ - [ReportPostRequest](doc/ReportPostRequest.md)
  - [ResetPasswordRequest](doc/ResetPasswordRequest.md)
+ - [ResolveReportRequest](doc/ResolveReportRequest.md)
  - [SharePostRequest](doc/SharePostRequest.md)
  - [SignIn](doc/SignIn.md)
  - [UpdateCommentRequest](doc/UpdateCommentRequest.md)

@@ -5,13 +5,13 @@
 ## 1. Package architecture
 
 ```
-sdks/web/                        # generated, gitignored, ~75 .ts files
+sdks/web/                        # generated, gitignored, ~79 .ts files
 ├── endpoints/                   # react-query v5 hooks, tags-split (11 dirs + index.ts)
-│   ├── posts/posts.ts           # usePostApiPosts, useGetApiPostsFeed, useGetApiPostsPostId, …
+│   ├── posts/posts.ts           # usePostApiPosts, useGetApiPostsFeed, useGetApiPostsPostId, usePostApiPostsPostIdReport, useGetApiPostsReportsMine, useDeleteApiPostsReportsReportId, …
 │   ├── user/user.ts             # usePostApiUserSignIn, usePutApiUserUpdateUser, …
 │   ├── comments/, follow/, like/, block-user/, notifications/
-│   └── admin-analytics/, admin-audit-logs/, admin-moderation/, admin-users/
-├── models/                      # 50 DTO interfaces + index.ts (createPostRequest.ts, signIn.ts, …)
+│   └── admin-analytics/, admin-audit-logs/, admin-moderation/, admin-users/   # admin-moderation.ts: useGetApiAdminModerationReports, useGetApiAdminModerationReportsReportId, usePostApiAdminModerationReportsReportIdResolve
+├── models/                      # 54 DTO interfaces + index.ts (createPostRequest.ts, signIn.ts, reportPostRequest.ts, resolveReportRequest.ts, …)
 └── validations/                 # zod schemas mirroring endpoints (posts/posts.ts, user/user.ts, …)
 sdks/generator/
 ├── orval.config.ts              # socialApi (react-query/axios) + socialValidation (zod)
@@ -202,3 +202,42 @@ export function apiMessage(e: unknown): string {
 ```
 
 Status map: 400 validation/share-policy/block-gates · 401 expired-or-revoked/blocked-read · 403 non-admin on `/api/admin/**` · 404 missing-or-deleted · 500 unexpected.
+
+### 3.5 Reporting — flag a post, list my reports, triage as moderator
+
+Server enum (case-insensitive): `Spam, Harassment, HateSpeech, Nudity, Violence, Misinformation, Copyright, Other` — `details` is required when `reason` is `Other`. Models (`sdks/web/models/reportPostRequest.ts`, `resolveReportRequest.ts`):
+
+```typescript
+export interface ReportPostRequest { reason?: string; details?: string | null; }
+export interface ResolveReportRequest { action?: string; note?: string | null; } // action: dismiss | hide_post
+```
+
+Zod (`validations/posts/posts.ts`, `validations/admin-moderation/admin-moderation.ts`): `PostApiPostsPostIdReportBody` (`{ reason: optional, details: nullish }`), `PostApiPostsPostIdReportParams` (`{ postId }`), `GetApiPostsReportsMineQueryParams` (`{ Page d1, Limit d20 }` — capitalized, posts convention), `DeleteApiPostsReportsReportIdParams` (`{ reportId }`), `GetApiAdminModerationReportsQueryParams` (`{ status?, page, pageSize }`), `PostApiAdminModerationReportsReportIdResolveBody` (`{ action: optional, note: nullish }`). All `…Response = zod.unknown()` — cast through `Envelope<T>` (§3.1).
+
+```tsx
+// flag a post — body-write, useQuery-style hook; wrap raw fetcher for forms
+import { postApiPostsPostIdReport, useGetApiPostsReportsMine, deleteApiPostsReportsReportId } from '@/sdk/endpoints/posts/posts';
+
+const report = useMutation({
+  mutationFn: ({ postId, reason, details }: { postId: string; reason: string; details?: string }) =>
+    postApiPostsPostIdReport(postId, { reason, details: details ?? null }),
+  // 400 → duplicate open report / self-report / bad reason; 404 → missing/deleted post
+});
+
+// my reports — param-GET-as-mutation; cancel — path-param hook
+const mine = useGetApiPostsReportsMine();
+mine.mutate({ params: { Page: 1, Limit: 20 } });
+await deleteApiPostsReportsReportId(reportId); // owner + Pending only
+```
+
+```tsx
+// moderator queue (Admin/Moderator bearer) — same two shapes
+import { useGetApiAdminModerationReports, useGetApiAdminModerationReportsReportId, postApiAdminModerationReportsReportIdResolve } from '@/sdk/endpoints/admin-moderation/admin-moderation';
+
+const queue = useGetApiAdminModerationReports();
+queue.mutate({ params: { status: 'Pending', page: 1, pageSize: 20 } }); // data: { items, totalCount, page, pageSize }
+const single = useGetApiAdminModerationReportsReportId();
+single.mutate({ reportId });
+await postApiAdminModerationReportsReportIdResolve(reportId, { action: 'hide_post', note: 'Harassment — hidden' });
+// dismiss → Dismissed; hide_post → post hidden + Actioned; both write audit + notify reporter
+```

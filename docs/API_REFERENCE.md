@@ -2,7 +2,7 @@
 
 > Contract source: `Social/Social.API.json` (OpenAPI **3.0.1**, `info: Social API / v1`, **no `servers` entry**, global `security: [{ Bearer: [] }]`).
 > Auth scheme (`components.securitySchemes.Bearer`): `type: http, scheme: bearer, bearerFormat: JWT` — send `Authorization: Bearer <token>`.
-> **77 operations across 70 paths, 11 tags.** Every `operationId` is **empty** in the spec (Orval auto-names apply — see `SDK_WEB.md`). Every operation declares only a `200` response with description `OK` and **no content schema**; actual bodies use the envelope below.
+> **83 operations across 76 paths, 11 tags.** Every `operationId` is **empty** in the spec (Orval auto-names apply — see `SDK_WEB.md`). Every operation declares only a `200` response with description `OK` and **no content schema**; actual bodies use the envelope below.
 > Pagination: post reads use **`Page`/`Limit`** (capitalized); all other paginated reads use lowercase **`page`/`limit`** (admin lists use `page`/`pageSize`). Defaults `Page|page = 1`, `Limit|limit = 20` (comments-by-post `limit = 10`, admin users `pageSize = 10`). No `minimum`/`maximum` in the spec — enforcement is server-side (`page|limit < 1` throws 400; `limit` clamped to 50; `ARCHITECTURE.md` §2.4).
 
 ## 1. Conventions (apply to every endpoint)
@@ -44,7 +44,7 @@ Unauthenticated requests get the framework 401 challenge. The browser admin cons
 
 ---
 
-## 2. Posts & Timeline (`Posts`, 8 ops)
+## 2. Posts & Timeline (`Posts`, 11 ops)
 
 | Method & Route | Auth | Params | Body | Success 200 | Errors |
 |----------------|------|--------|------|-------------|--------|
@@ -56,6 +56,9 @@ Unauthenticated requests get the framework 401 challenge. The browser admin cons
 | `GET /api/Posts/feed` — followed + own + public discovery; two-way block filtered; accepted-follow private included; deleted masked | Bearer | `Page` (d1), `Limit` (d20) | — | envelope, `data` = page, deterministic order | 400 bad paging; 401 |
 | `GET /api/Posts/{postId}` — detail with like status + 3-level parent chain; deleted parent content masked for non-owners | Bearer | `postId` path req | — | envelope, `data` = post + `ParentPost…` + media at every depth | 401 blocked / private-no-follow; 404 missing/deleted |
 | `DELETE /api/Posts/{postId}` — **soft** delete (`IsDeleted = true`, `PostsCount − 1` floored); shares kept | Bearer | `postId` path req | — | envelope, `data` = `false` if already gone, else success | 401; 404 foreign/missing |
+| `POST /api/posts/{postId}/report` — report a post for policy violation | Bearer | `postId` path req | `{ reason, details? }` | envelope | 400 duplicate open report / self-report / validation; 401; 404 missing/deleted |
+| `GET /api/posts/reports/mine` — caller's reports, `CreatedAt DESC` | Bearer | `Page` (d1), `Limit` (d20) | — | envelope, `data` = page | 400 bad paging; 401 |
+| `DELETE /api/posts/reports/{reportId}` — cancel own pending report | Bearer | `reportId` path req | — | envelope | 401; 404 missing/foreign |
 
 ---
 
@@ -157,7 +160,7 @@ Write-time pipeline (ADR-010): block gate → self-skip → preference toggle �
 |----------------|------|--------|------|-------------|--------|
 | `GET /api/admin/audit-logs` — append-only admin-action trail | Admin | `page` (d1), `pageSize` (d20), `actionType` opt, `adminId` opt, `fromDate`/`toDate` opt datetimes | — | envelope, `data` = page | 400 bad range/paging; 401/403 |
 
-## 11. Admin moderation (`AdminModeration`, 7 ops — `Admin`/`Moderator`)
+## 11. Admin moderation (`AdminModeration`, 10 ops — `Admin`/`Moderator`)
 
 | Method & Route | Auth | Params | Body | Success 200 | Errors |
 |----------------|------|--------|------|-------------|--------|
@@ -168,6 +171,9 @@ Write-time pipeline (ADR-010): block gate → self-skip → preference toggle �
 | `POST /api/admin/moderation/comments/{commentId}/restore` — restore comment + notice | Admin/Mod | `commentId` path req | `AdminModerationActionRequest` | envelope | same |
 | `POST /api/admin/moderation/posts/{postId}/visibility` — set `public\|followers_only\|private` + notice | Admin/Mod | `postId` path req | `AdminUpdateVisibilityRequest` | envelope | 400 bad visibility; 401/403; 404 |
 | `DELETE /api/admin/moderation/posts/{postId}` — **permanent** delete + media cleanup + notice | Admin/Mod | `postId` path req; `reason` query opt | — | envelope | 401/403; 404 |
+| `GET /api/admin/moderation/reports` — paged report queue with excerpt + open counts | Admin/Mod | `status` opt; `page` (d1), `pageSize` (d20) | — | envelope, `data` = `{ items, totalCount, page, pageSize }` | 400 bad status; 401/403 |
+| `GET /api/admin/moderation/reports/{id}` — single report | Admin/Mod | `id` path req | — | envelope | 401/403; 404 |
+| `POST /api/admin/moderation/reports/{id}/resolve` — `dismiss\|hide_post` + audit + notify | Admin/Mod | `id` path req | `{ action, note? }` | envelope | 400 invalid transition; 401/403; 404 |
 
 ## 12. Admin users (`AdminUsers`, 6 ops — `Admin`)
 
@@ -182,4 +188,4 @@ Ban semantics (ADR-009): requires non-empty reason + positive duration, refuses 
 | `POST /api/admin/users/{userId}/verify` — toggle `IsVerified` (only path — profile edits ignore it) | Admin | `userId` path req | `AdminToggleVerificationRequest` | envelope | 400; 401/403; 404 |
 | `POST /api/admin/users/{userId}/reset-password` — admin password reset | Admin | `userId` path req | `AdminResetPasswordRequest` | envelope | 400 validation; 401/403; 404 |
 
-*Count check: §2–§12 = 8+7+2+7+4+13+14+8+1+7+6 = 77 operations / 70 paths. No stubs — every operation in `Social.API.json` appears above.*
+*Count check: §2–§12 = 11+7+2+7+4+13+14+8+1+10+6 = 83 operations / 76 paths. No stubs — every operation in `Social.API.json` appears above.*

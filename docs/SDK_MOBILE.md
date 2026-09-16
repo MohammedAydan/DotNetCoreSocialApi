@@ -12,7 +12,7 @@ mobile/social_api_client/                 # isolated Dart package, mostly gitign
 │   ├── api_client_factory.dart           # HAND-WRITTEN, restored after every regen (§2.2)
 │   └── src/
 │       ├── api/                          # 11 *Api.dart (admin_analytics_api … user_api)
-│       ├── model/                        # 28 models + 28 .g.dart (json_serializable)
+│       ├── model/                        # 30 models + 30 .g.dart (json_serializable)
 │       ├── auth/                         # bearer_auth.dart, api_key_auth.dart, …
 │       ├── api.dart / deserialize.dart
 ├── doc/ test/                            # generator output (gitignored)
@@ -45,9 +45,9 @@ API classes (all methods return `Future<Response<void>>`, documented `Throws [Di
 
 | File | Methods |
 |------|---------|
-| `posts_api.dart` | `apiPostsFeedGet, apiPostsMyPostsGet, apiPostsPost, apiPostsPostIdDelete, apiPostsPostIdGet, apiPostsPut, apiPostsSharePost, apiPostsUserUserIdGet` |
+| `posts_api.dart` | `apiPostsFeedGet, apiPostsMyPostsGet, apiPostsPost, apiPostsPostIdDelete, apiPostsPostIdGet, apiPostsPut, apiPostsSharePost, apiPostsUserUserIdGet, apiPostsPostIdReportPost, apiPostsReportsMineGet, apiPostsReportsReportIdDelete` (11) |
 | `user_api.dart` | `apiUserSignInPost, apiUserRegisterPost, apiUserRefreshTokenPost, apiUserChangePasswordPost, …, apiUserUpdateUserPut, apiDashboardUserSignInPost, apiDashboardUserRefreshTokenPost` (14) |
-| `comments_api.dart`, `follow_api.dart`, `like_api.dart`, `block_user_api.dart`, `notifications_api.dart`, `admin_analytics_api.dart`, `admin_audit_logs_api.dart`, `admin_moderation_api.dart`, `admin_users_api.dart` | one method per operation in `API_REFERENCE.md` §§3–12 |
+| `comments_api.dart`, `follow_api.dart`, `like_api.dart`, `block_user_api.dart`, `notifications_api.dart`, `admin_analytics_api.dart`, `admin_audit_logs_api.dart`, `admin_moderation_api.dart`, `admin_users_api.dart` | one method per operation in `API_REFERENCE.md` §§3–12 (`admin_moderation_api.dart` incl. `apiAdminModerationReportsGet`, `apiAdminModerationReportsReportIdGet`, `apiAdminModerationReportsReportIdResolvePost`) |
 
 ## 2. Integration setup
 
@@ -187,10 +187,42 @@ final file = await MultipartFile.fromFile(
 // corresponding *Api method; Dio sets the multipart boundary automatically.
 ```
 
+### 3.5 Reporting — flag a post, list my reports, resolve as moderator
+
+Models are optional-field ctors (`lib/src/model/report_post_request.dart`, `resolve_report_request.dart` — both `fromJson`/`toJson` + `copyWith`). Server reason enum (case-insensitive): `Spam, Harassment, HateSpeech, Nudity, Violence, Misinformation, Copyright, Other` (`details` required when `Other`); resolve `action` is `dismiss` | `hide_post`. All methods return `Future<Response<void>>` — decode the envelope from `res.data` (§3.2).
+
+```dart
+// flag a post (posts_api.dart:338)
+await posts.apiPostsPostIdReportPost(
+  postId: postId,
+  reportPostRequest: ReportPostRequest(reason: 'Spam', details: null),
+);
+// 400 → duplicate open report / self-report / bad reason; 404 → missing/deleted
+
+// my reports — note capitalized query keys (Page/Limit, posts convention)
+final mine = await posts.apiPostsReportsMineGet(page: 1, limit: 20);
+
+// cancel own pending report
+await posts.apiPostsReportsReportIdDelete(reportId: reportId);
+```
+
+```dart
+// moderator queue (Admin/Moderator bearer; admin_moderation_api.dart:529,591,645)
+final queue = await moderation.apiAdminModerationReportsGet(
+  status: 'Pending', page: 1, pageSize: 20,
+); // data: { items, totalCount, page, pageSize }; item carries postExcerpt, openCountForPost
+final single = await moderation.apiAdminModerationReportsReportIdGet(reportId: id);
+await moderation.apiAdminModerationReportsReportIdResolvePost(
+  reportId: id,
+  resolveReportRequest: ResolveReportRequest(action: 'hide_post', note: 'Harassment — hidden'),
+);
+// dismiss → Dismissed; hide_post → post hidden + Actioned; audit + reporter/author notices
+```
+
 ## 4. Regeneration notes (why the script does three extra steps)
 
 1. **Pubspec patch** (`sdk: '>=3.5.0 <4.0.0'` → `'^3.8.0'`): `json_serializable ^6.9.3` emits null-aware elements (`?instance.field`) requiring language version 3.8+. Unpatched, `build_runner` fails to format.
 2. **Factory restore + ignore entry**: regeneration wipes `lib/`; the factory is copied back from `sdk-assets/` and pinned in `.openapi-generator-ignore`.
-3. **Codegen**: `flutter pub get` then `dart run build_runner build --delete-conflicting-outputs` (84 outputs, 28 `.g.dart`).
+3. **Codegen**: `flutter pub get` then `dart run build_runner build --delete-conflicting-outputs` (30 `.g.dart`; incremental rebuilds write only changed outputs).
 
 Gate: `flutter analyze` **inside** `mobile/social_api_client` → 0 errors (11 upstream `unused_import` warnings are generator-template noise, accepted).

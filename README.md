@@ -45,7 +45,7 @@ Live production: `https://social-api-v1.runasp.net` · Admin console: `/admin` (
 | Document | Contents |
 |----------|----------|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data flow, soft-delete & masking, privacy/sharing rules, two-way block, atomic counters, MySQL/EF indexing, split queries |
-| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | Exhaustive endpoint catalog — all **77 operations / 70 paths** across 11 tags, with auth, params, bodies, responses, error matrix |
+| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | Exhaustive endpoint catalog — all **83 operations / 76 paths** across 11 tags, with auth, params, bodies, responses, error matrix |
 | [docs/SDK_WEB.md](docs/SDK_WEB.md) | Next.js/TS guide — Query v5 setup, AbortController Axios mutator, fetch/mutate/validate/error recipes |
 | [docs/SDK_MOBILE.md](docs/SDK_MOBILE.md) | Flutter/Dart guide — path dependency, auth factory with secure storage, feed/post/upload recipes |
 | [docs/TOOLING_AND_PIPELINE.md](docs/TOOLING_AND_PIPELINE.md) | Monorepo isolation, build-before-generate order, CLI reference, CI example |

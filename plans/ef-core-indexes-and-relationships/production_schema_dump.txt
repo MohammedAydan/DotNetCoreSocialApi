@@ -1,6 +1,6 @@
 === PRODUCTION DATABASE SCHEMA DUMP ===
 Database: db18830
-Timestamp UTC: 2026-09-15 21:16:10
+Timestamp UTC: 2026-09-16 23:53:55
 
 --- __EFMigrationsHistory ---
 Migration: 20250517213954_InitialMigration | ProductVersion: 9.0.4
@@ -10,6 +10,9 @@ Migration: 20260209000225_InitialUpdateBlockUserTable | ProductVersion: 9.0.4
 Migration: 20260915011757_AddAuditLogsTable | ProductVersion: 9.0.4
 Migration: 20260915163717_AddIndexes | ProductVersion: 9.0.4
 Migration: 20260915165036_TunePostFeedIndexes | ProductVersion: 9.0.4
+Migration: 20260915211257_AddNotificationIntelligence | ProductVersion: 9.0.4
+Migration: 20260915214159_AddTelemetryAndDailyMetrics | ProductVersion: 9.0.4
+Migration: 20260916225834_AddPostReports | ProductVersion: 9.0.4
 
 --- SHOW CREATE TABLE Posts ---
 CREATE TABLE `posts` (
@@ -61,7 +64,7 @@ CREATE TABLE `refreshtokens` (
   UNIQUE KEY `IX_RefreshTokens_Token` (`Token`),
   KEY `FK_RefreshTokens_AspNetUsers_UserId` (`UserId`),
   CONSTRAINT `FK_RefreshTokens_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4265 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+) ENGINE=InnoDB AUTO_INCREMENT=4412 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 
 --- SHOW CREATE TABLE Likes ---
 CREATE TABLE `likes` (
@@ -134,10 +137,17 @@ CREATE TABLE `notifications` (
   `CreatedAt` datetime(6) NOT NULL,
   `UpdatedAt` datetime(6) DEFAULT NULL,
   `IsDeleted` tinyint(1) NOT NULL,
+  `ActorCount` int(11) NOT NULL DEFAULT 1,
+  `GroupKey` varchar(300) DEFAULT NULL,
+  `IsDeferred` tinyint(1) NOT NULL DEFAULT 0,
+  `LastActorName` varchar(120) DEFAULT NULL,
+  `Priority` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`),
   KEY `IX_Notifications_RecipientId` (`RecipientId`),
   KEY `IX_Notifications_UserId` (`UserId`),
   KEY `IX_Notifications_UserId_IsRead_CreatedAt` (`UserId`,`IsRead`,`CreatedAt` DESC),
+  KEY `IX_Notifications_RecipientId_GroupKey_IsRead` (`RecipientId`,`GroupKey`,`IsRead`),
+  KEY `IX_Notifications_RecipientId_IsRead_Priority_CreatedAt` (`RecipientId`,`IsRead`,`Priority` DESC,`CreatedAt` DESC),
   CONSTRAINT `FK_Notifications_AspNetUsers_RecipientId` FOREIGN KEY (`RecipientId`) REFERENCES `aspnetusers` (`Id`) ON DELETE CASCADE,
   CONSTRAINT `FK_Notifications_AspNetUsers_UserId` FOREIGN KEY (`UserId`) REFERENCES `aspnetusers` (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
@@ -215,6 +225,13 @@ Table: media | Index: IX_Media_PostId | NonUnique: 1 | Seq: 1 | Column: PostId
 Table: media | Index: IX_Media_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
 Table: media | Index: PRIMARY | NonUnique: 0 | Seq: 1 | Column: Id
 Table: notifications | Index: IX_Notifications_RecipientId | NonUnique: 1 | Seq: 1 | Column: RecipientId
+Table: notifications | Index: IX_Notifications_RecipientId_GroupKey_IsRead | NonUnique: 1 | Seq: 1 | Column: RecipientId
+Table: notifications | Index: IX_Notifications_RecipientId_GroupKey_IsRead | NonUnique: 1 | Seq: 2 | Column: GroupKey
+Table: notifications | Index: IX_Notifications_RecipientId_GroupKey_IsRead | NonUnique: 1 | Seq: 3 | Column: IsRead
+Table: notifications | Index: IX_Notifications_RecipientId_IsRead_Priority_CreatedAt | NonUnique: 1 | Seq: 1 | Column: RecipientId
+Table: notifications | Index: IX_Notifications_RecipientId_IsRead_Priority_CreatedAt | NonUnique: 1 | Seq: 2 | Column: IsRead
+Table: notifications | Index: IX_Notifications_RecipientId_IsRead_Priority_CreatedAt | NonUnique: 1 | Seq: 3 | Column: Priority
+Table: notifications | Index: IX_Notifications_RecipientId_IsRead_Priority_CreatedAt | NonUnique: 1 | Seq: 4 | Column: CreatedAt
 Table: notifications | Index: IX_Notifications_UserId | NonUnique: 1 | Seq: 1 | Column: UserId
 Table: notifications | Index: IX_Notifications_UserId_IsRead_CreatedAt | NonUnique: 1 | Seq: 1 | Column: UserId
 Table: notifications | Index: IX_Notifications_UserId_IsRead_CreatedAt | NonUnique: 1 | Seq: 2 | Column: IsRead

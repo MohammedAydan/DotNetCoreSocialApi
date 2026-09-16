@@ -74,7 +74,7 @@ Do not put long architecture narratives, full dependency lists, or file-by-file 
 
 ## 1. Mental model & lifecycle maps
 
-.NET 9 Web API + EF Core 9 + MySQL 8 + pnpm SDK monorepo (`sdks/generator` engine → `sdks/web` TS + `sdks/mobile` Dart). Tests: 242 (`Social.Tests`). Spec: `Social/Social.API.json` — 70 paths / 77 ops / 11 tags / 0 operationIds / bearer-only / 200-only responses.
+.NET 9 Web API + EF Core 9 + MySQL 8 + pnpm SDK monorepo (`sdks/generator` engine → `sdks/web` TS + `sdks/mobile` Dart). Tests: 266 (`Social.Tests`). Spec: `Social/Social.API.json` — 76 paths / 83 ops / 11 tags / 0 operationIds / bearer-only / 200-only responses.
 
 ```
 Request lifecycle:
